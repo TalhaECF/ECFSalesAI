@@ -37,20 +37,25 @@ class UploadFileToSharePointView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 class InitialFormResponseView(APIView):
     """
     Fetch the Discovery Questionnaire file for a specific project ID.
     """
-    def get(self, request, project_id):
+    def post(self, request):
         try:
             site_id = config("SITE_ID")
             # Define the library path for Discovery Questionnaire files
             discovery_library_path = "Documents"
 
+            # Get project_id from the request body
+            project_id = request.data.get("project_id")
+            if not project_id:
+                return Response({"error": "Project ID is required."}, status=400)
+
             # Get access token
             access_token = get_access_token()
-            print(f"TOKEN: {access_token}")
+            # print(f"TOKEN: {access_token}")
+
             # Fetch the file
             # file_data = get_file_by_project_id(
             #     site_id=site_id,
@@ -69,15 +74,21 @@ class DiscoveryQuestionnaireView(APIView):
     """
     Fetch the Discovery Questionnaire file for a specific project ID.
     """
-    def get(self, request, project_id):
+    def post(self, request):
         try:
             site_id = config("SITE_ID")
             # Define the library path for Discovery Questionnaire files
             discovery_library_path = "Discovery Questionnaires"
 
+            # Get project_id from the request body
+            project_id = request.data.get("project_id")
+            if not project_id:
+                return Response({"error": "Project ID is required."}, status=400)
+
             # Get access token
             access_token = get_access_token()
-            print(f"TOKEN: {access_token}")
+            # print(f"TOKEN: {access_token}")
+
             # Fetch the file
             # file_data = get_file_by_project_id(
             #     site_id=site_id,
@@ -96,11 +107,16 @@ class WBSDocumentView(APIView):
     """
     Fetch the WBS Document file for a specific project ID.
     """
-    def get(self, request, project_id):
+    def post(self, request):
         try:
             site_id = config("SITE_ID")
             # Define the library path for WBS files
             wbs_library_path = "WBS Documents"
+
+            # Get project_id from the request body
+            project_id = request.data.get("project_id")
+            if not project_id:
+                return Response({"error": "Project ID is required."}, status=400)
 
             # Get access token
             access_token = get_access_token()
