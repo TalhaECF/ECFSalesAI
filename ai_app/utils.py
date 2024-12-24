@@ -1,6 +1,9 @@
+import os
 import requests
-from django.conf import settings
 from decouple import config
+from PyPDF2 import PdfReader
+from docx import Document
+
 
 def get_access_token():
     """
@@ -95,3 +98,44 @@ def get_file_by_project_id(site_id, library_path, project_id, access_token):
 
     # If no matching file is found
     raise Exception(f"No file found for project ID: {project_id}")
+
+
+
+def extract_text_from_pdf(file_path):
+    """Extract text from a PDF file."""
+    reader = PdfReader(file_path)
+    text = ""
+    for page in reader.pages:
+        text += page.extract_text()
+    return text
+
+
+def extract_text_from_docx(file_path):
+    """Extract text from a Word document."""
+    doc = Document(file_path)
+    text = "\n".join([p.text for p in doc.paragraphs])
+    return text
+
+
+def read_and_parse_documents(folder_path):
+    """Read all PDF and DOCX files from the folder and return concatenated text."""
+    all_text = ""
+    discovery_questionnaire_text = None
+
+    for file_name in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, file_name)
+        if file_name.lower().endswith(".pdf"):
+            text = extract_text_from_pdf(file_path)
+        elif file_name.lower().endswith(".docx"):
+            text = extract_text_from_docx(file_path)
+        else:
+            continue  # Skip non-PDF and non-DOCX files
+
+        # Check for the Discovery Questionnaire document
+        if "discovery questionnaire" in file_name.lower():
+            discovery_questionnaire_text = text
+        else:
+            all_text += text + "\n"
+
+    return all_text, discovery_questionnaire_text
+

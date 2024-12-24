@@ -2,9 +2,11 @@ from django.http import JsonResponse
 from rest_framework.views import APIView, View
 from rest_framework.response import Response
 from rest_framework import status
-from .utils import upload_file_to_sharepoint, get_file_by_project_id, get_access_token
+from .utils import upload_file_to_sharepoint, get_file_by_project_id, get_access_token, read_and_parse_documents
 from decouple import config
 import requests
+import openai
+from pathlib import Path
 
 
 class UploadFileToSharePointView(APIView):
@@ -165,3 +167,67 @@ class OAuthRedirectView(View):
             return JsonResponse({"access_token": token_data.get("access_token")})
         else:
             return JsonResponse({"error": response.json()}, status=response.status_code)
+
+
+# Configure Azure OpenAI settings
+openai.api_type = "azure"
+openai.api_base = "https://<your-resource-name>.openai.azure.com/"  # Replace with your Azure OpenAI endpoint
+openai.api_version = "2023-03-15-preview"
+openai.api_key = "<your-api-key>"
+
+
+
+class DiscoveryQuestionnaireAPIView(APIView):
+    """
+    API View to handle document parsing and generating discovery questionnaires.
+    """
+
+    def post(self, request, *args, **kwargs):
+        # Folder path where documents are stored
+        folder_path = Path("Dummy Docs")
+
+        if not folder_path.exists() or not folder_path.is_dir():
+            return Response(
+                {"error": "The 'Dummy Docs' folder does not exist."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            # Read and parse documents
+            all_text, discovery_questionnaire_text = read_and_parse_documents(folder_path)
+
+            if discovery_questionnaire_text:
+                return Response(
+                    {
+                        "message": "Discovery questionnaire already exists in the folder.",
+                        "content": discovery_questionnaire_text,
+                    },
+                    status=status.HTTP_200_OK,
+                )
+
+            # Prompt for LLM to generate the questionnaire
+            prompt = f"""
+            Based on the following text, generate a comprehensive discovery questionnaire:
+
+            {all_text}
+            """
+            deployment_name = "<your-deployment-name>"  # Replace with your model deployment name
+
+            response = openai.Completion.create(
+                engine=deployment_name,
+                prompt=prompt,
+                max_tokens=500,
+                temperature=0.7,
+            )
+            result = response.choices[0].text.strip()
+
+            return Response(
+                {"generated_questionnaire": result}, status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
