@@ -4,9 +4,11 @@ from rest_framework.response import Response
 from rest_framework import status
 from .utils import upload_file_to_sharepoint, get_file_by_project_id, get_access_token, read_and_parse_documents
 from decouple import config
+import os
 import requests
 import openai
 from pathlib import Path
+from openai import AzureOpenAI
 
 
 class UploadFileToSharePointView(APIView):
@@ -170,21 +172,27 @@ class OAuthRedirectView(View):
 
 
 # Configure Azure OpenAI settings
-openai.api_type = "azure"
-openai.api_base = "https://<your-resource-name>.openai.azure.com/"  # Replace with your Azure OpenAI endpoint
-openai.api_version = "2023-03-15-preview"
-openai.api_key = "<your-api-key>"
+# openai.api_type = "azure"
+# openai.api_base = config("OPENAI_API_BASE")
+# openai.api_version = config("OPENAI_API_VERSION")
+# openai.api_key = config("OPENAI_API_KEY")
 
+# Initialize OpenAI client
+client = AzureOpenAI(
+    api_key=config("OPENAI_API_KEY"),
+    api_version=config("OPENAI_API_VERSION"),
+    azure_endpoint = config("OPENAI_API_BASE")
+    )
 
 
 class DiscoveryQuestionnaireAPIView(APIView):
     """
-    API View to handle document parsing and generating discovery questionnaires.
+    API View to handle document parsing and generating discovery questionnaires in Markdown format.
     """
 
     def post(self, request, *args, **kwargs):
         # Folder path where documents are stored
-        folder_path = Path("Dummy Docs")
+        folder_path = Path("C:/Users/TalhaJaleel/OneDrive - ECF DATA LLC/Desktop/ECf Sales AI enablement/Code/Backend/Dummy Docs")
 
         if not folder_path.exists() or not folder_path.is_dir():
             return Response(
@@ -196,33 +204,31 @@ class DiscoveryQuestionnaireAPIView(APIView):
             # Read and parse documents
             all_text, discovery_questionnaire_text = read_and_parse_documents(folder_path)
 
-            if discovery_questionnaire_text:
-                return Response(
-                    {
-                        "message": "Discovery questionnaire already exists in the folder.",
-                        "content": discovery_questionnaire_text,
-                    },
-                    status=status.HTTP_200_OK,
-                )
+            # Prompt the LLM to generate a new discovery questionnaire
+            prompt = (f"Based on the following discovery questionnaire, generate a new, improved discovery questionnaire in Doc format, "
+                      f"also make sure to maintain the structure and format of the discovery questionnaire:"
+                      f"\n\n{discovery_questionnaire_text} \n\n And just for extra context, here is the Initial form response with transcript: {all_text}"
+                      f"Make sure to complete the discovery questionnaire"
+                      )
 
-            # Prompt for LLM to generate the questionnaire
-            prompt = f"""
-            Based on the following text, generate a comprehensive discovery questionnaire:
-
-            {all_text}
-            """
-            deployment_name = "<your-deployment-name>"  # Replace with your model deployment name
-
-            response = openai.Completion.create(
-                engine=deployment_name,
-                prompt=prompt,
-                max_tokens=500,
-                temperature=0.7,
+            response = client.chat.completions.create(
+                model="gpt-4",
+                max_tokens=4096,
+                messages=[{"role": "user", "content": prompt}]
             )
-            result = response.choices[0].text.strip()
+            result = response.choices[0].message.content.strip()
+
+            # Save the generated questionnaire as a Markdown file
+            output_file_path = folder_path / "Generated_Discovery_Questionnaire.doc"
+            with open(output_file_path, "w", encoding="utf-8") as file:
+                file.write(result)
+
 
             return Response(
-                {"generated_questionnaire": result}, status=status.HTTP_200_OK
+                {
+                    "message": "Generated discovery questionnaire successfully."
+                },
+                status=status.HTTP_200_OK,
             )
 
         except Exception as e:

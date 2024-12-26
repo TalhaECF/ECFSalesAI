@@ -139,3 +139,67 @@ def read_and_parse_documents(folder_path):
 
     return all_text, discovery_questionnaire_text
 
+
+def update_project_status_by_id(access_token, site_id, project_list_name, project_id, new_status):
+    """
+    Updates the project status in the 'Project' list based on the given Project ID.
+
+    Parameters:
+        access_token (str): Microsoft Graph API access token.
+        site_id (str): The site ID where the SharePoint list is located.
+        project_list_name (str): The name of the SharePoint list ("Project").
+        project_id (str): The Project ID to match in the list.
+        new_status (str): The new status to set in the project status column.
+
+    Returns:
+        str: Success or error message.
+    """
+    try:
+        # Step 1: Get the list ID for the "Project" list
+        list_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/lists"
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+        response = requests.get(list_url, headers=headers)
+
+        if response.status_code != 200:
+            return f"Failed to retrieve lists: {response.status_code} - {response.text}"
+
+        # Find the "Project" list
+        lists = response.json().get("value", [])
+        list_id = next((lst["id"] for lst in lists if lst["name"] == project_list_name), None)
+
+        if not list_id:
+            return f"List '{project_list_name}' not found in the site."
+
+        # Step 2: Find the item matching the given Project ID
+        items_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/lists/{list_id}/items?$filter=fields/ProjectID eq '{project_id}'"
+        response = requests.get(items_url, headers=headers)
+
+        if response.status_code != 200:
+            return f"Failed to retrieve list items: {response.status_code} - {response.text}"
+
+        items = response.json().get("value", [])
+        if not items:
+            return f"No items found with Project ID '{project_id}'."
+
+        # Step 3: Update the 'project status' column for the matching item
+        for item in items:
+            item_id = item["id"]
+            update_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/lists/{list_id}/items/{item_id}"
+            update_data = {
+                "fields": {
+                    "projectstatus": new_status  # Use the correct internal name for the column
+                }
+            }
+            update_response = requests.patch(update_url, headers=headers, json=update_data)
+
+            if update_response.status_code == 200:
+                return f"Successfully updated project status for Project ID '{project_id}' to '{new_status}'."
+            else:
+                return f"Failed to update item {item_id}: {update_response.status_code} - {update_response.text}"
+
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
+
