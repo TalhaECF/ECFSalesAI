@@ -2,7 +2,8 @@ from django.http import JsonResponse
 from rest_framework.views import APIView, View
 from rest_framework.response import Response
 from rest_framework import status
-from .utils import upload_file_to_sharepoint, get_file_by_project_id, get_access_token, read_and_parse_documents
+from .utils import upload_file_to_sharepoint, get_file_by_project_id, get_access_token, read_and_parse_documents, \
+    upload_questionnaire_to_sharepoint
 from decouple import config
 import os
 import requests
@@ -192,7 +193,9 @@ class DiscoveryQuestionnaireAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
         # Folder path where documents are stored
-        folder_path = Path("C:/Users/TalhaJaleel/OneDrive - ECF DATA LLC/Desktop/ECf Sales AI enablement/Code/Backend/Dummy Docs")
+        # folder_path = Path("C:/Users/TalhaJaleel/OneDrive - ECF DATA LLC/Desktop/ECf Sales AI enablement/Code/Backend/Dummy Docs")
+        folder_path = Path(".")
+        project_id = request.data.get("project_id")
 
         if not folder_path.exists() or not folder_path.is_dir():
             return Response(
@@ -213,7 +216,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
 
             response = client.chat.completions.create(
                 model="gpt-4",
-                max_tokens=4096,
+                max_tokens=100,
                 messages=[{"role": "user", "content": prompt}]
             )
             result = response.choices[0].message.content.strip()
@@ -223,6 +226,8 @@ class DiscoveryQuestionnaireAPIView(APIView):
             with open(output_file_path, "w", encoding="utf-8") as file:
                 file.write(result)
 
+            # Upload the file to SharePoint
+            upload_questionnaire_to_sharepoint(output_file_path, project_id)
 
             return Response(
                 {

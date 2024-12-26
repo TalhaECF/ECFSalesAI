@@ -140,66 +140,42 @@ def read_and_parse_documents(folder_path):
     return all_text, discovery_questionnaire_text
 
 
-def update_project_status_by_id(access_token, site_id, project_list_name, project_id, new_status):
-    """
-    Updates the project status in the 'Project' list based on the given Project ID.
-
-    Parameters:
-        access_token (str): Microsoft Graph API access token.
-        site_id (str): The site ID where the SharePoint list is located.
-        project_list_name (str): The name of the SharePoint list ("Project").
-        project_id (str): The Project ID to match in the list.
-        new_status (str): The new status to set in the project status column.
-
-    Returns:
-        str: Success or error message.
-    """
+def upload_questionnaire_to_sharepoint(file_path, project_id):
     try:
-        # Step 1: Get the list ID for the "Project" list
-        list_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/lists"
+        access_token = get_access_token()
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
         }
-        response = requests.get(list_url, headers=headers)
 
-        if response.status_code != 200:
-            return f"Failed to retrieve lists: {response.status_code} - {response.text}"
+        # Upload the file
+        upload_url = "https://graph.microsoft.com/v1.0/sites/ecfdata.sharepoint.com,164f5483-ae41-4136-8ec6-8cd9645c947d,d8bd93c5-2a05-4582-90c6-d6ee8c5f409e/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ7BI2nybhy9Qp-2Uu0XUmby/root:/Discovery Questionnaire.doc:/content"
 
-        # Find the "Project" list
-        lists = response.json().get("value", [])
-        list_id = next((lst["id"] for lst in lists if lst["name"] == project_list_name), None)
+        with open(file_path, "rb") as file:
+            response = requests.put(upload_url, headers=headers, data=file)
 
-        if not list_id:
-            return f"List '{project_list_name}' not found in the site."
+        if response.status_code not in [200, 201]:
+            raise Exception(f"Failed to upload file: {response.json()}")
 
-        # Step 2: Find the item matching the given Project ID
-        items_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/lists/{list_id}/items?$filter=fields/ProjectID eq '{project_id}'"
-        response = requests.get(items_url, headers=headers)
+        # Extract the uploaded file's item ID
+        item_id = response.json().get("id")
 
-        if response.status_code != 200:
-            return f"Failed to retrieve list items: {response.status_code} - {response.text}"
+        # Get existing columns
+        columns_url = f"https://graph.microsoft.com/v1.0/sites/ecfdata.sharepoint.com,164f5483-ae41-4136-8ec6-8cd9645c947d,d8bd93c5-2a05-4582-90c6-d6ee8c5f409e/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ7BI2nybhy9Qp-2Uu0XUmby/items/{item_id}/listItem/fields"
+        fields_response = requests.get(columns_url, headers=headers)
 
-        items = response.json().get("value", [])
-        if not items:
-            return f"No items found with Project ID '{project_id}'."
+        if fields_response.status_code != 200:
+            raise Exception(f"Failed to fetch columns: {fields_response.json()}")
 
-        # Step 3: Update the 'project status' column for the matching item
-        for item in items:
-            item_id = item["id"]
-            update_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/lists/{list_id}/items/{item_id}"
-            update_data = {
-                "fields": {
-                    "projectstatus": new_status  # Use the correct internal name for the column
-                }
-            }
-            update_response = requests.patch(update_url, headers=headers, json=update_data)
+        updated_project_id = {
+            "ProjectId":project_id
+        }
 
-            if update_response.status_code == 200:
-                return f"Successfully updated project status for Project ID '{project_id}' to '{new_status}'."
-            else:
-                return f"Failed to update item {item_id}: {update_response.status_code} - {update_response.text}"
+        # Update the columns
+        update_response = requests.patch(columns_url, headers=headers, json=updated_project_id)
+
+        if update_response.status_code != 200:
+            raise Exception(f"Failed to update project_id: {update_response.json()}")
 
     except Exception as e:
-        return f"An error occurred: {str(e)}"
-
+        raise Exception(f"Error during SharePoint upload or update: {str(e)}")
