@@ -179,3 +179,29 @@ def upload_questionnaire_to_sharepoint(file_path, project_id):
 
     except Exception as e:
         raise Exception(f"Error during SharePoint upload or update: {str(e)}")
+
+
+def update_current_step(project_id, current_step):
+    """
+    Updates the CurrentStep field in the Project list for the specified project_id.
+    """
+    try:
+        access_token = get_access_token()
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+
+        # Update URL for CurrentStep
+        update_url = f"https://graph.microsoft.com/v1.0/sites/ecfdata.sharepoint.com,164f5483-ae41-4136-8ec6-8cd9645c947d,d8bd93c5-2a05-4582-90c6-d6ee8c5f409e/lists/12e93f47-8fde-47ef-9d8c-30864859fa02/items/{project_id}/fields"
+        update_body = {"CurrentStep": current_step}
+
+        # PATCH request to update CurrentStep
+        response = requests.patch(update_url, headers=headers, json=update_body)
+
+        if response.status_code != 200:
+            raise Exception(f"Failed to update CurrentStep: {response.json()}")
+
+    except Exception as e:
+        raise Exception(f"Error updating CurrentStep: {str(e)}")
+

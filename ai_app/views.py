@@ -3,7 +3,7 @@ from rest_framework.views import APIView, View
 from rest_framework.response import Response
 from rest_framework import status
 from .utils import upload_file_to_sharepoint, get_file_by_project_id, get_access_token, read_and_parse_documents, \
-    upload_questionnaire_to_sharepoint
+    upload_questionnaire_to_sharepoint, update_current_step
 from decouple import config
 import os
 import requests
@@ -227,8 +227,8 @@ class DiscoveryQuestionnaireAPIView(APIView):
                 file.write(result)
 
             # Upload the file to SharePoint
-            upload_questionnaire_to_sharepoint(output_file_path, project_id)
-
+            # upload_questionnaire_to_sharepoint(output_file_path, project_id)
+            update_current_step(project_id, "Questionnaire Review")
             return Response(
                 {
                     "message": "Generated discovery questionnaire successfully."
