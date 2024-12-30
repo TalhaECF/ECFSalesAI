@@ -148,8 +148,9 @@ def upload_questionnaire_to_sharepoint(file_path, project_id):
             "Content-Type": "application/json"
         }
 
+
         # Upload the file
-        upload_url = "https://graph.microsoft.com/v1.0/sites/ecfdata.sharepoint.com,164f5483-ae41-4136-8ec6-8cd9645c947d,d8bd93c5-2a05-4582-90c6-d6ee8c5f409e/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ7BI2nybhy9Qp-2Uu0XUmby/root:/Discovery Questionnaire.doc:/content"
+        upload_url = f"https://graph.microsoft.com/v1.0/sites/ecfdata.sharepoint.com,164f5483-ae41-4136-8ec6-8cd9645c947d,d8bd93c5-2a05-4582-90c6-d6ee8c5f409e/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ7BI2nybhy9Qp-2Uu0XUmby/root:/Discovery Questionnaire-{project_id}.docx:/content"
 
         with open(file_path, "rb") as file:
             response = requests.put(upload_url, headers=headers, data=file)

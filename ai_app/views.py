@@ -10,6 +10,7 @@ import requests
 import openai
 from pathlib import Path
 from openai import AzureOpenAI
+from docx import Document
 
 
 class UploadFileToSharePointView(APIView):
@@ -74,6 +75,11 @@ class DiscoveryQuestionnaireView(APIView):
     """
     Fetch the Discovery Questionnaire file for a specific project ID.
     """
+    http_method_names = ['get', 'head', 'post']
+
+    # def get(self, request):
+    #     return Response("SUCCESS", status=200)
+
     def post(self, request):
         try:
             site_id = config("SITE_ID")
@@ -86,7 +92,7 @@ class DiscoveryQuestionnaireView(APIView):
                 return Response({"error": "Project ID is required."}, status=400)
 
             # Get access token
-            access_token = get_access_token()
+            # access_token = get_access_token()
             # print(f"TOKEN: {access_token}")
 
             # Fetch the file
@@ -190,6 +196,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
     """
     API View to handle document parsing and generating discovery questionnaires in Markdown format.
     """
+    http_method_names = ['get', 'head', 'post']
 
     def post(self, request, *args, **kwargs):
         # Folder path where documents are stored
@@ -216,19 +223,25 @@ class DiscoveryQuestionnaireAPIView(APIView):
 
             response = client.chat.completions.create(
                 model="gpt-4",
-                max_tokens=100,
+                max_tokens=1000,
                 messages=[{"role": "user", "content": prompt}]
             )
             result = response.choices[0].message.content.strip()
 
             # Save the generated questionnaire as a Markdown file
-            output_file_path = folder_path / "Generated_Discovery_Questionnaire.doc"
-            with open(output_file_path, "w", encoding="utf-8") as file:
-                file.write(result)
+            output_file_path = folder_path / "Generated_Discovery_Questionnaire.docx"
 
-            # Upload the file to SharePoint
-            # upload_questionnaire_to_sharepoint(output_file_path, project_id)
+            doc = Document()
+            doc.add_paragraph(result)  # Add LLM-generated content
+            doc.save(output_file_path)
+
+            # Upload to SharePoint
+            upload_questionnaire_to_sharepoint(output_file_path, project_id)
             update_current_step(project_id, "Questionnaire Review")
+
+            # Remove the file after successful submission
+            os.remove(output_file_path)
+
             return Response(
                 {
                     "message": "Generated discovery questionnaire successfully."
