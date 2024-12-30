@@ -1,3 +1,4 @@
+from PyPDF2 import PdfReader
 from django.http import JsonResponse
 from rest_framework.views import APIView, View
 from rest_framework.response import Response
@@ -214,26 +215,57 @@ class DiscoveryQuestionnaireAPIView(APIView):
             # Read and parse documents
             all_text, discovery_questionnaire_text = read_and_parse_documents(folder_path)
 
-            # Prompt the LLM to generate a new discovery questionnaire
-            prompt = (f"Based on the following discovery questionnaire, generate a new, improved discovery questionnaire in Doc format, "
-                      f"also make sure to maintain the structure and format of the discovery questionnaire:"
-                      f"\n\n{discovery_questionnaire_text} \n\n And just for extra context, here is the Initial form response with transcript: {all_text}"
-                      f"Make sure to complete the discovery questionnaire"
-                      )
+            prompt = (
+                f"Based on the following discovery questionnaire, generate a new discovery questionnaire tailored specifically for the Solution Play(s) mentioned in the Initial Form response. "
+                f"Ensure that the structure and format of the sample discovery questionnaire are followed precisely. "
+                f"Use clear numbering for each question and proper formatting for multiple-choice options (e.g., (1), (2), etc.). "
+                f"Questions should be concise and relevant to the Solution Play(s) mentioned."
+                f"\n\nSample Discovery Questionnaire:\n{discovery_questionnaire_text}\n\n"
+                f"For context, here is the Initial Form response with the transcript:\n{all_text}\n\n"
+                f"Make sure to complete the discovery questionnaire focusing exclusively on the Solution Play(s) mentioned in the Form Response. "
+                f"Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format"
+            )
 
             response = client.chat.completions.create(
                 model="gpt-4",
-                max_tokens=1000,
+                max_tokens=1200,
                 messages=[{"role": "user", "content": prompt}]
             )
             result = response.choices[0].message.content.strip()
+            print(result)
 
-            # Save the generated questionnaire as a Markdown file
+            # Identify and process the example file (PDF or DOCX)
+            example_file_path_pdf = folder_path / "Discovery Questionnaire.pdf"
+            example_file_path_docx = folder_path / "Discovery Questionnaire.docx"
+
+            new_doc = Document()  # Create a new document
+
+            if example_file_path_docx.exists():
+                # Load DOCX file for formatting
+                example_doc = Document(example_file_path_docx)
+                for paragraph in example_doc.paragraphs:
+                    # new_doc.add_paragraph(paragraph.text, style=paragraph.style)
+                    new_doc.add_paragraph("", style=paragraph.style)
+
+            elif example_file_path_pdf.exists():
+                # Load and extract text from PDF
+                reader = PdfReader(example_file_path_pdf)
+                for page in reader.pages:
+                    # text = page.extract_text()
+                    text = ""
+                    new_doc.add_paragraph(text)  # Add extracted content as paragraphs
+            else:
+                return Response(
+                    {"error": "Example document (PDF or DOCX) not found for formatting."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Add LLM-generated content to the new document
+            new_doc.add_paragraph(result, style='Normal')
+
+            # Save the generated questionnaire
             output_file_path = folder_path / "Generated_Discovery_Questionnaire.docx"
-
-            doc = Document()
-            doc.add_paragraph(result)  # Add LLM-generated content
-            doc.save(output_file_path)
+            new_doc.save(output_file_path)
 
             # Upload to SharePoint
             upload_questionnaire_to_sharepoint(output_file_path, project_id)
@@ -254,4 +286,3 @@ class DiscoveryQuestionnaireAPIView(APIView):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
