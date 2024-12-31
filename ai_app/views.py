@@ -1,3 +1,5 @@
+import re
+
 from PyPDF2 import PdfReader
 from django.http import JsonResponse
 from rest_framework.views import APIView, View
@@ -228,37 +230,14 @@ class DiscoveryQuestionnaireAPIView(APIView):
 
             response = client.chat.completions.create(
                 model="gpt-4",
-                max_tokens=1200,
+                max_tokens=2000,
                 messages=[{"role": "user", "content": prompt}]
             )
             result = response.choices[0].message.content.strip()
-            print(result)
-
-            # Identify and process the example file (PDF or DOCX)
-            example_file_path_pdf = folder_path / "Discovery Questionnaire.pdf"
-            example_file_path_docx = folder_path / "Discovery Questionnaire.docx"
 
             new_doc = Document()  # Create a new document
 
-            if example_file_path_docx.exists():
-                # Load DOCX file for formatting
-                example_doc = Document(example_file_path_docx)
-                for paragraph in example_doc.paragraphs:
-                    # new_doc.add_paragraph(paragraph.text, style=paragraph.style)
-                    new_doc.add_paragraph("", style=paragraph.style)
-
-            elif example_file_path_pdf.exists():
-                # Load and extract text from PDF
-                reader = PdfReader(example_file_path_pdf)
-                for page in reader.pages:
-                    # text = page.extract_text()
-                    text = ""
-                    new_doc.add_paragraph(text)  # Add extracted content as paragraphs
-            else:
-                return Response(
-                    {"error": "Example document (PDF or DOCX) not found for formatting."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+            result = re.sub(r'\*', '', result)
 
             # Add LLM-generated content to the new document
             new_doc.add_paragraph(result, style='Normal')
@@ -286,3 +265,39 @@ class DiscoveryQuestionnaireAPIView(APIView):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class PromptResponseAPIView(APIView):
+    """
+    API View to handle user queries/prompts and return AI-generated responses.
+    """
+    http_method_names = ['post']
+
+    def post(self, request, *args, **kwargs):
+        prompt = request.data.get("prompt")
+
+        if not prompt:
+            return Response(
+                {"error": "The 'prompt' field is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            # Call OpenAI GPT model to get a response
+            response = openai.Completion.create(
+                engine="text-davinci-003",  # Replace with your model
+                prompt=prompt,
+                max_tokens=200,
+            )
+            generated_text = response.choices[0].text.strip()
+
+            return Response(
+                {"response": generated_text},
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
