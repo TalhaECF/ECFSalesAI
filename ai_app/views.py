@@ -5,8 +5,7 @@ from django.http import JsonResponse
 from rest_framework.views import APIView, View
 from rest_framework.response import Response
 from rest_framework import status
-from .utils import upload_file_to_sharepoint, get_file_by_project_id, get_access_token, read_and_parse_documents, \
-    upload_questionnaire_to_sharepoint, update_current_step
+from .utils import *
 from decouple import config
 import os
 import requests
@@ -202,8 +201,17 @@ class DiscoveryQuestionnaireAPIView(APIView):
     http_method_names = ['get', 'head', 'post']
 
     def post(self, request, *args, **kwargs):
+        access_token = get_access_token()
+        taxonomy_json = ""
+        base_url = request.get_host()
+        message, file_path, success = taxonomy_processing(client, access_token)
+
+        if not success:
+            print(f'Using the already existing JSON content because {message}')
+            file_path = "response.json"
+        taxonomy_json = read_json_file(file_path)
+
         # Folder path where documents are stored
-        # folder_path = Path("C:/Users/TalhaJaleel/OneDrive - ECF DATA LLC/Desktop/ECf Sales AI enablement/Code/Backend/Dummy Docs")
         folder_path = Path(".")
         project_id = request.data.get("project_id")
 
@@ -224,6 +232,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
                 f"Questions should be concise and relevant to the Solution Play(s) mentioned."
                 f"\n\nSample Discovery Questionnaire:\n{discovery_questionnaire_text}\n\n"
                 f"For context, here is the Initial Form response with the transcript:\n{all_text}\n\n"
+                f"Here is some more context which has solution plays: \n{taxonomy_json}\n"
                 f"Make sure to complete the discovery questionnaire focusing exclusively on the Solution Play(s) mentioned in the Form Response. "
                 f"Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format"
             )
@@ -301,3 +310,20 @@ class PromptResponseAPIView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+
+class SharePointFileParserView(APIView):
+    http_method_names = ['post']
+
+    def post(self, request):
+
+        try:
+            access_token = get_access_token()
+            message, file_path, success = taxonomy_processing(client, access_token)
+
+            if not success:
+                return Response(message, status=404)
+
+            return Response(message,status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

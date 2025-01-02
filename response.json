@@ -1,0 +1,104 @@
+{
+    "solution_plays": {
+        "Innovate with Azure AI Platform": {
+            "technical_capabilities": [
+                {
+                    "name": "Building, customizing, tuning & testing of AI Models",
+                    "description": "Innovate with top GenAI models as well as utilize the latest technology to ensure a scalable and adaptable solution that meets customers\u2019 business needs."
+                },
+                {
+                    "name": "Development of tools & solutions to aid in the customizing, tuning & testing of AI Models",
+                    "description": "Design, develop, test, deploy and publish Azure AI Platform-built tooling solutions intended to help developer/customers customize, tune & test AI models."
+                },
+                {
+                    "name": "Build AI Apps",
+                    "description": "Design, develop, test, and deploy Azure AI Platform-built software solutions using Azure OpenAI, Azure AI Services, or via Azure AI Studio."
+                }
+            ]
+        },
+        "Unify Your Intelligent Data and Analytics Platform": {
+            "technical_capabilities": [
+                {
+                    "name": "Cloud Scale Analytics",
+                    "description": "Deliver unparalleled performance in analytics at incredible value, using Azure Analytics."
+                },
+                {
+                    "name": "Enable Unified Data Governance",
+                    "description": "Comprehensive solutions to help govern, protect, and manage your data estate."
+                },
+                {
+                    "name": "New Analytics with Synapse & PowerBI",
+                    "description": "Services that implement Power BI and drive a data culture with modern analytics solutions."
+                },
+                {
+                    "name": "Appliance Migration to Azure Synapse",
+                    "description": "Migrate on-premises legacy analytics appliance to an enterprise scale data warehouse on Azure."
+                }
+            ]
+        },
+        "Advance Sustainability with an Intelligent Data Platform": {
+            "technical_capabilities": [
+                {
+                    "name": "Cloud Scale Analytics",
+                    "description": "Drive and accelerate adoption of Fabric for ESG workloads through Fabric, Sustainability data solutions in Fabric (SDSF) and/or Microsoft Cloud for Sustainability (MC4S)."
+                }
+            ]
+        },
+        "Digital and Application Innovation": {
+            "technical_capabilities": [
+                {
+                    "name": "Build and Modernize AI Apps",
+                    "description": "Build AI-powered apps with a portfolio of Azure Application Platform, Database and AI services."
+                },
+                {
+                    "name": "Accelerate Developer Productivity with DevOps and GitHub",
+                    "description": "Accelerate the software development and release process with better quality and more controlled timing using DevOps practices and GitHub products."
+                },
+                {
+                    "name": "Modernize Apps",
+                    "description": "Modernize existing enterprise applications to Azure Application Platform, leveraging Azure Migrate and other tools."
+                },
+                {
+                    "name": "Accelerate Innovation with Integration Services",
+                    "description": "Integrate enterprise applications with Azure integration services, including Azure API Management and Logic Apps."
+                }
+            ]
+        },
+        "Infrastructure": {
+            "technical_capabilities": [
+                {
+                    "name": "Migrate and Secure Windows Server, SQL Server, and Linux Estate",
+                    "description": "Migrate legacy on-premises windows servers and SQL servers to Azure virtual machines."
+                },
+                {
+                    "name": "VMware Infrastructure Migration to Azure",
+                    "description": "Transform VMware environment with Azure."
+                },
+                {
+                    "name": "Innovate with High Performance Compute",
+                    "description": "Support High Performance Compute workloads, typically consuming considerable amounts of computing power."
+                }
+            ]
+        },
+        "Business Applications": {
+            "technical_capabilities": [
+                {
+                    "name": "Innovate with AI in Low Code",
+                    "description": "Services to help customers build apps to modernize and innovate faster, addressing challenges across any part of the business."
+                },
+                {
+                    "name": "Accelerate Revenue Generation",
+                    "description": "Optimize sales processes to reduce costs, help teams adapt to a rapidly changing environment, and build stronger relationships."
+                },
+                {
+                    "name": "Modernize Service",
+                    "description": "Modernize customer service operations to improve service delivery and experience."
+                },
+                {
+                    "name": "Modernize ERP",
+                    "description": "Optimize financial operations to enhance decision-making, protect revenue, mitigate risks, and reduce costs."
+                }
+            ]
+        }
+    }
+}

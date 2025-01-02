@@ -1,5 +1,7 @@
 import os
+import json
 import requests
+from Tools.scripts.generate_opcode_h import header
 from decouple import config
 from PyPDF2 import PdfReader
 from docx import Document
@@ -44,23 +46,6 @@ def upload_file_to_sharepoint(site_id, drive_id, folder_path, file_name, file_co
     except Exception as e:
         raise Exception(f"Error uploading file: {str(e)}")
 
-
-# def get_file_from_sharepoint(site_id, drive_id, file_path):
-#     """
-#     Fetch a file from SharePoint based on its path.
-#     """
-#     try:
-#         access_token = get_access_token()
-#         url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{drive_id}/root:/{file_path}:/content"
-#         headers = {'Authorization': f'Bearer {access_token}'}
-#
-#         response = requests.get(url, headers=headers)
-#         if response.status_code == 200:
-#             return response.content  # Return the raw file content
-#         else:
-#             raise Exception(f"Failed to retrieve file: {response.json()}")
-#     except Exception as e:
-#         raise Exception(f"Error retrieving file: {str(e)}")
 
 
 def get_file_from_sharepoint(site_id, file_path, access_token):
@@ -206,3 +191,105 @@ def update_current_step(project_id, current_step):
     except Exception as e:
         raise Exception(f"Error updating CurrentStep: {str(e)}")
 
+
+def get_sharepoint_items(access_token, drive_url):
+    """Fetch items from the SharePoint drive URL."""
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = requests.get(drive_url, headers=headers)
+    response.raise_for_status()
+    return response.json()
+
+def get_taxonomy_item_id(access_token, items):
+    headers = {"Authorization": f"Bearer {access_token}",}
+    item_ids = [i["id"] for i in items["value"]]
+    download_urls = [i["@microsoft.graph.downloadUrl"] for i in items["value"]]
+
+    for ind, item_id in enumerate(item_ids):
+        url = f"https://graph.microsoft.com/v1.0/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ5wiSqDwOdQRomugUc4T4s7/items/{item_id}/listItem/fields"
+        response = requests.get(url, headers=headers)
+        values = response.json()
+        if "isParsed" in values:
+            if values["isParsed"] == False:
+                return item_id, download_urls[ind]
+    return -1, ""
+
+def get_file_content(access_token, download_url):
+    """Download the file content from the provided URL."""
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = requests.get(download_url, headers=headers)
+    response.raise_for_status()
+    return response.content
+
+
+def parse_pdf_content(file_content):
+    """Parse the content of a PDF file."""
+    with open("temp.pdf", "wb") as f:
+        f.write(file_content)
+    reader = PdfReader("temp.pdf")
+    content = "\n".join([page.extract_text() for page in reader.pages])
+    os.remove("temp.pdf")
+    return content
+
+
+def send_to_gpt(client, parsed_content):
+    """Send parsed content to GPT for a response."""
+    prompt = (
+        f"I want the response in JSON format. Here is the content: \n{parsed_content}\n"
+        f"Please structure the JSON with keys named 'solution_plays' and include in the values the technical capabilities along with a description of each."
+        f"Make sure to add all Solution Plays from the content into Json keys"
+    )
+    response = client.chat.completions.create(
+        model="gpt-4",
+        max_tokens=2000,
+        response_format={"type": "json_object"},
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.choices[0].message.content
+
+
+def save_response_to_json(data, file_path):
+    """Save the GPT response to a JSON file."""
+    with open(file_path, "w") as f:
+        json.dump(data, f, indent=4)
+
+
+def set_is_parsed_false(access_token, item_id):
+    url = f"https://graph.microsoft.com/v1.0/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ5wiSqDwOdQRomugUc4T4s7/items/{item_id}/listItem/fields"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    fields = { "isParsed": "True" }
+    response = requests.patch(url,json=fields ,headers=headers)
+    response.raise_for_status()
+    if response.status_code == "200":
+        return True
+    return False
+
+
+def read_json_file(file_path):
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+        return data
+    except FileNotFoundError:
+        raise FileNotFoundError(f"The file at {file_path} does not exist.")
+    except json.JSONDecodeError as e:
+        raise json.JSONDecodeError(f"Error decoding JSON: {e.msg}", e.doc, e.pos)
+
+
+def taxonomy_processing(client, access_token):
+    drive_url = "https://graph.microsoft.com/v1.0/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ5wiSqDwOdQRomugUc4T4s7/root/children"
+    items = get_sharepoint_items(access_token, drive_url)
+    if len(items) == 0:
+        return "No Taxonomy file found (or) All files have already been processed!", "", False
+
+    item_id, download_url = get_taxonomy_item_id(access_token, items)
+    if item_id == -1:
+        return "No Taxonomy file found (or) All files have already been processed!", "", False
+    file_content = get_file_content(access_token, download_url)
+    set_is_parsed_false(access_token, item_id)
+
+    parsed_content = parse_pdf_content(file_content)
+    gpt_response = send_to_gpt(client, parsed_content)
+
+    json_file_path = "response.json"
+    save_response_to_json(eval(gpt_response), json_file_path)
+    return "File processed and response saved", json_file_path, True

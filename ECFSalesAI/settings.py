@@ -27,7 +27,6 @@ DEBUG = True
 
 # https://d0f5-20-172-5-28.ngrok-free.app/redirect/
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'ecfsalesai-c7g9gtgmeceacggk.eastus2-01.azurewebsites.net']
-CSRF_TRUSTED_ORIGINS = ['https://d0f5-20-172-5-28.ngrok-free.app.ngrok.io']
 
 
 # Application definition
