@@ -1,7 +1,6 @@
 import os
 import json
 import requests
-from Tools.scripts.generate_opcode_h import header
 from decouple import config
 from PyPDF2 import PdfReader
 from docx import Document
