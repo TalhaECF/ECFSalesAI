@@ -8,11 +8,14 @@ from rest_framework import status
 from .utils import *
 from decouple import config
 import os
+import sys
 import requests
 import openai
 from pathlib import Path
 from openai import AzureOpenAI
 from docx import Document
+from .copilot_utils import complete_process
+# sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 
 class UploadFileToSharePointView(APIView):
@@ -201,9 +204,9 @@ class DiscoveryQuestionnaireAPIView(APIView):
     http_method_names = ['get', 'head', 'post']
 
     def post(self, request, *args, **kwargs):
+        user_remarks = request.data.get("message")
         access_token = get_access_token()
         taxonomy_json = ""
-        base_url = request.get_host()
         message, file_path, success = taxonomy_processing(client, access_token)
 
         if not success:
@@ -222,11 +225,15 @@ class DiscoveryQuestionnaireAPIView(APIView):
             )
 
         try:
+            # message = ""
             # Read and parse documents
             all_text, discovery_questionnaire_text = read_and_parse_documents(folder_path)
+            prompt_zero = f"Return all the solution plays in a list in json, The key must be 'SolutionPlays' and in values keep a lsit like ['SP1', 'SP2'], find Solution Plays from here: {all_text}"
+            solution_plays_list = gpt_response_for_sp(client, prompt_zero)
+            copilot_response, success = complete_process(message)
 
             prompt = (
-                f"Based on the following discovery questionnaire, generate a new discovery questionnaire tailored specifically for the Solution Play(s) mentioned in the Initial Form response. "
+                f"Based on the following discovery questionnaire, generate a new discovery questionnaire tailored specifically for the Solution Play(s) mentioned in this list: {solution_plays_list}\n "
                 f"Ensure that the structure and format of the sample discovery questionnaire are followed precisely. "
                 f"Use clear numbering for each question and proper formatting for multiple-choice options (e.g., (1), (2), etc.). "
                 f"Questions should be concise and relevant to the Solution Play(s) mentioned."
@@ -234,9 +241,10 @@ class DiscoveryQuestionnaireAPIView(APIView):
                 f"For context, here is the Initial Form response with the transcript:\n{all_text}\n\n"
                 f"Here is some more context which has solution plays: \n{taxonomy_json}\n"
                 f"Make sure to complete the discovery questionnaire focusing exclusively on the Solution Play(s) mentioned in the Form Response. "
-                f"Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format"
+                f"Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format\n"
+                f"Additional Notes: {user_remarks} \n {copilot_response}"
             )
-
+            print(prompt)
             response = client.chat.completions.create(
                 model="gpt-4",
                 max_tokens=2000,
@@ -244,7 +252,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
             )
             result = response.choices[0].message.content.strip()
 
-            new_doc = Document()  # Create a new document
+            new_doc = Document()
 
             result = re.sub(r'\*', '', result)
 

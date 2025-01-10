@@ -246,6 +246,17 @@ def send_to_gpt(client, parsed_content):
     return response.choices[0].message.content
 
 
+def gpt_response_for_sp(client, prompt):
+    response = client.chat.completions.create(
+        model="gpt-4",
+        max_tokens=350,
+        response_format={"type": "json_object"},
+        messages=[{"role": "user", "content": prompt}],
+    )
+    result = response.choices[0].message.content
+    return result
+
+
 def save_response_to_json(data, file_path):
     """Save the GPT response to a JSON file."""
     with open(file_path, "w") as f:
