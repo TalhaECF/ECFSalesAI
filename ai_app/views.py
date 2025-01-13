@@ -247,7 +247,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
             print(prompt)
             response = client.chat.completions.create(
                 model="gpt-4",
-                max_tokens=2000,
+                max_tokens=4096,
                 messages=[{"role": "user", "content": prompt}]
             )
             result = response.choices[0].message.content.strip()
