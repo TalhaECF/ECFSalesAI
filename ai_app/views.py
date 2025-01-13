@@ -232,18 +232,19 @@ class DiscoveryQuestionnaireAPIView(APIView):
             solution_plays_list = gpt_response_for_sp(client, prompt_zero)
             copilot_response, success = complete_process(message)
 
-            prompt = (
-                f"Based on the following discovery questionnaire, generate a new discovery questionnaire tailored specifically for the Solution Play(s) mentioned in this list: {solution_plays_list}\n "
-                f"Ensure that the structure and format of the sample discovery questionnaire are followed precisely. "
-                f"Use clear numbering for each question and proper formatting for multiple-choice options (e.g., (1), (2), etc.). "
-                f"Questions should be concise and relevant to the Solution Play(s) mentioned."
-                f"\n\nSample Discovery Questionnaire:\n{discovery_questionnaire_text}\n\n"
-                f"For context, here is the Initial Form response with the transcript:\n{all_text}\n\n"
-                f"Here is some more context which has solution plays: \n{taxonomy_json}\n"
-                f"Make sure to complete the discovery questionnaire focusing exclusively on the Solution Play(s) mentioned in the Form Response. "
-                f"Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format\n"
-                f"Additional Notes: {user_remarks} \n {copilot_response}"
-            )
+            prompt = f""""
+                Based on the following discovery questionnaire, generate a new discovery questionnaire tailored specifically for the Solution Play(s) mentioned in this list: {solution_plays_list}\n
+                Ensure that the structure and format of the sample discovery questionnaire are followed precisely.
+                Use clear numbering for each question and proper formatting for multiple-choice options (e.g., (1), (2), etc.).
+                Questions should be concise and relevant to the Solution Play(s) mentioned.
+                \n\nSample Discovery Questionnaire:\n{discovery_questionnaire_text}\n\n
+                For context, here is the Initial Form response with the transcript:\n{all_text}\n\n
+                Here is some more context which has solution plays: \n{taxonomy_json}\n
+                Make sure to complete the discovery questionnaire focusing exclusively on the Solution Play(s) mentioned in the Form Response. 
+                Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format\n
+                Additional Notes: {user_remarks} \n\n {copilot_response}
+                """
+
             print(prompt)
             response = client.chat.completions.create(
                 model="gpt-4",
