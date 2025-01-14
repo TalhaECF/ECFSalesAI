@@ -187,7 +187,8 @@ class OAuthRedirectView(View):
 client = AzureOpenAI(
     api_key=config("OPENAI_API_KEY"),
     api_version=config("OPENAI_API_VERSION"),
-    azure_endpoint = config("OPENAI_API_BASE")
+    azure_endpoint = config("OPENAI_API_BASE"),
+    azure_deployment=config("DEPLOYMENT_NAME"),
     )
 
 
@@ -198,6 +199,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
     http_method_names = ['get', 'head', 'post']
 
     def post(self, request, *args, **kwargs):
+
         user_remarks = request.data.get("message")
         access_token = get_access_token()
         taxonomy_json = ""
@@ -246,7 +248,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
             print(prompt)
             deployment_name_model = config("DEPLOYMENT_NAME")
             response = client.chat.completions.create(
-                model=deployment_name_model,
+                model="gpt-4o-mini",
                 max_tokens=10000,
                 messages=[{"role": "user", "content": prompt}]
             )
