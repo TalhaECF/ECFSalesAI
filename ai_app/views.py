@@ -183,12 +183,6 @@ class OAuthRedirectView(View):
             return JsonResponse({"error": response.json()}, status=response.status_code)
 
 
-# Configure Azure OpenAI settings
-# openai.api_type = "azure"
-# openai.api_base = config("OPENAI_API_BASE")
-# openai.api_version = config("OPENAI_API_VERSION")
-# openai.api_key = config("OPENAI_API_KEY")
-
 # Initialize OpenAI client
 client = AzureOpenAI(
     api_key=config("OPENAI_API_KEY"),
@@ -209,6 +203,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
         taxonomy_json = ""
         message, file_path, success = taxonomy_processing(client, access_token)
 
+
         if not success:
             print(f'Using the already existing JSON content because {message}')
             file_path = "response.json"
@@ -217,6 +212,9 @@ class DiscoveryQuestionnaireAPIView(APIView):
         # Folder path where documents are stored
         folder_path = Path(".")
         project_id = request.data.get("project_id")
+        initial_form_content_binary, form_success = get_initial_form_content(access_token, project_id)
+        initial_form_content = process_docx_content(initial_form_content_binary)
+        print(f"Initial Form Response for Project ID: {project_id} has been downloaded")
 
         if not folder_path.exists() or not folder_path.is_dir():
             return Response(
@@ -225,7 +223,6 @@ class DiscoveryQuestionnaireAPIView(APIView):
             )
 
         try:
-            # message = ""
             # Read and parse documents
             all_text, discovery_questionnaire_text = read_and_parse_documents(folder_path)
             prompt_zero = f"Return all the solution plays in a list in json, The key must be 'SolutionPlays' and in values keep a lsit like ['SP1', 'SP2'], find Solution Plays from here: {all_text}"
@@ -233,22 +230,24 @@ class DiscoveryQuestionnaireAPIView(APIView):
             copilot_response, success = complete_process(message)
 
             prompt = f""""
-                Based on the following discovery questionnaire, generate a new discovery questionnaire tailored specifically for the Solution Play(s) mentioned in this list: {solution_plays_list}\n
-                Ensure that the structure and format of the sample discovery questionnaire are followed precisely.
-                Use clear numbering for each question and proper formatting for multiple-choice options (e.g., (1), (2), etc.).
-                Questions should be concise and relevant to the Solution Play(s) mentioned.
+                Based on the following discovery questionnaire, generate a new discovery questionnaire tailored specifically for the Solution Play(s) mentioned in this list: {solution_plays_list}\n 
                 \n\nSample Discovery Questionnaire:\n{discovery_questionnaire_text}\n\n
-                For context, here is the Initial Form response with the transcript:\n{all_text}\n\n
+                For context, here is the Initial Form response with the transcript:\n{initial_form_content}\n {copilot_response} \n
                 Here is some more context which has solution plays: \n{taxonomy_json}\n
-                Make sure to complete the discovery questionnaire focusing exclusively on the Solution Play(s) mentioned in the Form Response. 
-                Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format\n
-                Additional Notes: {user_remarks} \n\n {copilot_response}
+                User Notes (must be followed): {user_remarks}
+                
+                Instructions:
+                - Make sure to complete the discovery questionnaire focusing exclusively on the Solution Play(s) mentioned in the Form Response and User Notes
+                - Questions should be relevant to the Solution Play(s) mentioned.
+                - Use clear numbering for each question and proper formatting for multiple-choice options (e.g., (1), (2), etc.).
+                - Ensure that the structure and format of the sample discovery questionnaire are followed precisely.
+                - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format
                 """
-
             print(prompt)
+            deployment_name_model = config("DEPLOYMENT_NAME")
             response = client.chat.completions.create(
-                model="gpt-4",
-                max_tokens=4096,
+                model=deployment_name_model,
+                max_tokens=10000,
                 messages=[{"role": "user", "content": prompt}]
             )
             result = response.choices[0].message.content.strip()

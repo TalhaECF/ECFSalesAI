@@ -1,9 +1,11 @@
 import os
+import re
 import json
 import requests
 from decouple import config
 from PyPDF2 import PdfReader
 from docx import Document
+import tempfile
 
 
 def get_access_token():
@@ -66,7 +68,6 @@ def get_file_by_project_id(site_id, library_path, project_id, access_token):
     """
     # Microsoft Graph API URL to list items in the library
     url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root:/{library_path}:/children"
-    print(f"URL: {url}")
     headers = {"Authorization": f"Bearer {access_token}"}
 
     # Fetch all items in the document library
@@ -232,13 +233,14 @@ def parse_pdf_content(file_content):
 
 def send_to_gpt(client, parsed_content):
     """Send parsed content to GPT for a response."""
+    deployment_name_model = config("DEPLOYMENT_NAME")
     prompt = (
         f"I want the response in JSON format. Here is the content: \n{parsed_content}\n"
         f"Please structure the JSON with keys named 'solution_plays' and include in the values the technical capabilities along with a description of each."
         f"Make sure to add all Solution Plays from the content into Json keys"
     )
     response = client.chat.completions.create(
-        model="gpt-4",
+        model=deployment_name_model,
         max_tokens=2000,
         response_format={"type": "json_object"},
         messages=[{"role": "user", "content": prompt}]
@@ -303,3 +305,54 @@ def taxonomy_processing(client, access_token):
     json_file_path = "response.json"
     save_response_to_json(eval(gpt_response), json_file_path)
     return "File processed and response saved", json_file_path, True
+
+
+
+def process_docx_content(binary_content: bytes) -> str:
+    # Create a temporary .docx file
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.docx') as temp_file:
+        temp_filename = temp_file.name
+        # Write binary content to the temporary .docx file
+        temp_file.write(binary_content)
+
+    # Read the content back from the .docx file
+    document_content = ''
+    try:
+        doc = Document(temp_filename)
+        for para in doc.paragraphs:
+            document_content += para.text + '\n'
+    finally:
+        # Ensure the temporary file is deleted even if an error occurs
+        os.remove(temp_filename)
+
+    # Return the content read from the .docx file
+    return document_content.strip()
+
+
+def get_initial_form(access_token, items, project_id):
+    headers = {"Authorization": f"Bearer {access_token}",}
+    item_values = items["value"]
+    target_ind = None
+
+    for ind, elem in enumerate(item_values):
+        split_name_list =  elem["name"].split("_")
+        if len(split_name_list) > 1:
+            sp_proj_id = int(re.findall(r"\d+", split_name_list[1])[0])
+            # item_proj_id = int(split_name_list[1])
+            if sp_proj_id == project_id:
+                target_ind = ind
+                break
+
+    download_url = item_values[target_ind]["@microsoft.graph.downloadUrl"]
+    return download_url
+
+
+def get_initial_form_content(access_token, project_id):
+    drive_url = "https://graph.microsoft.com/v1.0/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ4PixS0X80bQ6ZBf1zckJxn/root/children"
+    items = get_sharepoint_items(access_token, drive_url)
+    if len(items) == 0:
+        return "No files found!", False
+
+    download_url = get_initial_form(access_token, items, project_id)
+    file_content = get_file_content(access_token, download_url)
+    return file_content, True
