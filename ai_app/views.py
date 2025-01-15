@@ -200,7 +200,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
     http_method_names = ['get', 'head', 'post']
 
     def post(self, request, *args, **kwargs):
-        time.sleep(5)
+        time.sleep(12)
         user_remarks = request.data.get("message")
         access_token = get_access_token()
         taxonomy_json = ""
