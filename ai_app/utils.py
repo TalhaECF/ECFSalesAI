@@ -1,6 +1,8 @@
 import os
 import re
 import json
+import time
+
 import requests
 from decouple import config
 from PyPDF2 import PdfReader
@@ -340,7 +342,7 @@ def get_initial_form(access_token, items, project_id):
     for ind, elem in enumerate(item_values):
         split_name_list =  elem["name"].split("_")
         if len(split_name_list) > 1:
-            sp_proj_id = int(re.findall(r"\d+", split_name_list[1])[0])
+            sp_proj_id = int(re.findall(r"\d+", split_name_list[1])[0]) # ['filename', '70.docx']
             # item_proj_id = int(split_name_list[1])
             if sp_proj_id == project_id:
                 target_ind = ind
@@ -351,7 +353,9 @@ def get_initial_form(access_token, items, project_id):
 
 
 def get_initial_form_content(access_token, project_id):
+    time.sleep(5)
     drive_url = "https://graph.microsoft.com/v1.0/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ4PixS0X80bQ6ZBf1zckJxn/root/children"
+    #TODO: filter by project id and its download url
     items = get_sharepoint_items(access_token, drive_url)
     if len(items) == 0:
         return "No files found!", False
