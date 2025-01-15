@@ -338,7 +338,7 @@ def get_file_down_url(access_token, items, project_id, delimiter):
     headers = {"Authorization": f"Bearer {access_token}",}
     item_values = items["value"]
     target_ind = None
-
+    time.sleep(5)
     for ind, elem in enumerate(item_values):
         split_name_list =  elem["name"].split(delimiter)
         if len(split_name_list) > 1:
