@@ -298,6 +298,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
                 - Questions should be relevant to the Solution Play(s) mentioned.
                 - Use clear numbering for each question and proper formatting for multiple-choice options (e.g., (1), (2), etc.).
                 - Ensure that the structure and format of the sample discovery questionnaire are followed precisely.
+                - Write the output directly, do not add any meta content, add the content of discovery questionnaire ONLY
                 - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format
                 """
 
