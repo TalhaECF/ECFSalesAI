@@ -215,9 +215,9 @@ class DiscoveryQuestionnaireAPIView(APIView):
         # Folder path where documents are stored
         folder_path = Path(".")
         project_id = request.data.get("project_id")
-        initial_form_content_binary, form_success = get_initial_form_content(access_token, project_id)
-        initial_form_content = process_docx_content(initial_form_content_binary)
-        print(f"Initial Form Response for Project ID: {project_id} has been downloaded")
+        # initial_form_content_binary, form_success = get_initial_form_content(access_token, project_id)
+        # initial_form_content = process_docx_content(initial_form_content_binary)
+        # print(f"Initial Form Response for Project ID: {project_id} has been downloaded")
 
         if not folder_path.exists() or not folder_path.is_dir():
             return Response(
@@ -235,7 +235,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
             prompt = f""""
                 Based on the following discovery questionnaire, generate a new discovery questionnaire tailored specifically for the Solution Play(s) mentioned in this list: {solution_plays_list}\n 
                 \n\nSample Discovery Questionnaire:\n{discovery_questionnaire_text}\n\n
-                For context, here is the Initial Form response with the transcript:\n{initial_form_content}\n {copilot_response} \n
+                For context, here is the Initial Form response with the transcript:\n\n {copilot_response} \n
                 Here is some more context which has solution plays: \n{taxonomy_json}\n
                 User Notes (must be followed): {user_remarks}
                 
@@ -246,7 +246,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
                 - Ensure that the structure and format of the sample discovery questionnaire are followed precisely.
                 - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format
                 """
-            print(prompt)
+
             deployment_name_model = config("DEPLOYMENT_NAME")
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
