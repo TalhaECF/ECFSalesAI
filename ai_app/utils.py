@@ -334,13 +334,13 @@ def process_docx_content(binary_content: bytes) -> str:
     return document_content.strip()
 
 
-def get_initial_form(access_token, items, project_id):
+def get_file_down_url(access_token, items, project_id, delimiter):
     headers = {"Authorization": f"Bearer {access_token}",}
     item_values = items["value"]
     target_ind = None
 
     for ind, elem in enumerate(item_values):
-        split_name_list =  elem["name"].split("_")
+        split_name_list =  elem["name"].split(delimiter)
         if len(split_name_list) > 1:
             sp_proj_id = int(re.findall(r"\d+", split_name_list[1])[0]) # ['filename', '70.docx']
             # item_proj_id = int(split_name_list[1])
@@ -360,6 +360,18 @@ def get_initial_form_content(access_token, project_id):
     if len(items) == 0:
         return "No files found!", False
 
-    download_url = get_initial_form(access_token, items, project_id)
+    download_url = get_file_down_url(access_token, items, project_id)
+    file_content = get_file_content(access_token, download_url)
+    return file_content, True
+
+
+def get_discovery_questionnaire(access_token, project_id):
+    drive_url = "https://graph.microsoft.com/v1.0/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ7BI2nybhy9Qp-2Uu0XUmby/root/children"
+    items = get_sharepoint_items(access_token, drive_url)
+
+    if len(items) == 0:
+        return "No files found!", False
+
+    download_url = get_file_down_url(access_token, items, project_id, delimiter="-")
     file_content = get_file_content(access_token, download_url)
     return file_content, True
