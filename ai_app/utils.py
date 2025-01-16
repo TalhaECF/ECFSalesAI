@@ -352,8 +352,31 @@ def get_file_down_url(access_token, items, project_id, delimiter):
     return download_url
 
 
+def get_initial_form_by_search(access_token, item_id):
+    # url = f"https://graph.microsoft.com/v1.0/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ4PixS0X80bQ6ZBf1zckJxn/root/children?search'{project_id}.doc'"
+    # headers = {"Authorization": f"Bearer {access_token}"}
+    # response = requests.get(url, headers=headers)
+    # response = response.json()
+    # target_item_id = response["value"][0]["id"]
+    # url_for_fields = f"https://graph.microsoft.com/v1.0/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ4PixS0X80bQ6ZBf1zckJxn/items/{target_item_id}/listItem"
+    # response = requests.get(url, headers=headers)
+    # response = response.json()
+    # if project_id == response["fields"]["ProejctId"]:
+
+    url = f"https://graph.microsoft.com/v1.0/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ4PixS0X80bQ6ZBf1zckJxn/items/{item_id}"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = requests.get(url, headers=headers)
+    response = response.json()
+    download_url = response.get("@microsoft.graph.downloadUrl", None)
+    if not download_url:
+        raise "There was an issue while getting the Download URL from Sharepoint"
+    file_content_binary = get_file_content(access_token, download_url)
+    initial_form_content = process_docx_content(binary_content=file_content_binary)
+
+    return initial_form_content
+
+
 def get_initial_form_content(access_token, project_id):
-    time.sleep(5)
     drive_url = "https://graph.microsoft.com/v1.0/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ4PixS0X80bQ6ZBf1zckJxn/root/children"
     #TODO: filter by project id and its download url
     items = get_sharepoint_items(access_token, drive_url)

@@ -203,6 +203,8 @@ class DiscoveryQuestionnaireAPIView(APIView):
         user_remarks = request.data.get("message")
         access_token = get_access_token()
         project_id = request.data.get("project_id")
+        item_id = request.data.get("item_id")
+        initial_form_content = get_initial_form_by_search(access_token, item_id)
 
 
         taxonomy_json = ""
@@ -217,10 +219,6 @@ class DiscoveryQuestionnaireAPIView(APIView):
         # Folder path where documents are stored
         folder_path = Path(".")
 
-        # initial_form_content_binary, form_success = get_file_down_url(access_token, project_id, "_")
-        # initial_form_content = process_docx_content(initial_form_content_binary)
-        # print(f"Initial Form Response for Project ID: {project_id} has been downloaded")
-
         if not folder_path.exists() or not folder_path.is_dir():
             return Response(
                 {"error": "The 'Dummy Docs' folder does not exist."},
@@ -230,7 +228,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
         try:
             # Read and parse documents
             all_text, discovery_questionnaire_text = read_and_parse_documents(folder_path)
-            prompt_zero = f"Return all the solution plays in a list in json, The key must be 'SolutionPlays' and in values keep a lsit like ['SP1', 'SP2'], find Solution Plays from here: {all_text}"
+            prompt_zero = f"Return all the solution plays in a list in json, The key must be 'SolutionPlays' and in values keep a lsit like ['SP1', 'SP2'], find Solution Plays from here: {initial_form_content}"
             solution_plays_list = gpt_response_for_sp(client, prompt_zero)
             copilot_response, success = complete_process(message)
 
