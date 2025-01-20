@@ -203,8 +203,9 @@ class DiscoveryQuestionnaireAPIView(APIView):
         user_remarks = request.data.get("message")
         access_token = get_access_token()
         project_id = request.data.get("project_id")
-        item_id = request.data.get("item_id")
-        initial_form_content = get_initial_form_by_search(access_token, item_id)
+        form_item_id = request.data.get("form_item_id")
+        discovery_item_id = request.data.get("discovery_item_id")
+        initial_form_content = get_initial_form_by_search(access_token, form_item_id)
 
 
         taxonomy_json = ""
@@ -232,56 +233,31 @@ class DiscoveryQuestionnaireAPIView(APIView):
             solution_plays_list = gpt_response_for_sp(client, prompt_zero)
             copilot_response, success = complete_process(message)
 
-            # if user_remarks != "":
-            #     questionnaire_content_binary, flag = get_discovery_questionnaire(access_token, project_id)
-            #     questionnaire_content = process_docx_content(questionnaire_content_binary)
-            #     print(questionnaire_content)
-            #
-            #     if flag:
-            #         user_remarks_prompt = f"""
-            #         Here is the discovery questionnaire content: {questionnaire_content}
-            #         Make changes to it based on these user remarks: {user_remarks}
-            #
-            #         Instructions:
-            #         - Here is the additional information for updating the discovery questionnaire based on user remarks: {all_text}
-            #         - Ensure that the structure and format of the provided discovery questionnaire are followed precisely.
-            #         - Write the output directly, do not add any meta content, add the content of discovery questionnaire ONLY
-            #         - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format
-            #         - Keep the provided discovery questionnaire content and only updated based on user remarks
-            #         - Questions should be relevant to the Solution Play(s) mentioned here {solution_plays_list}
-            #         """
-            #
-            #         response = client.chat.completions.create(
-            #             model="gpt-4o-mini",
-            #             max_tokens=10000,
-            #             messages=[{"role": "user", "content": user_remarks_prompt}]
-            #         )
-            #         result = response.choices[0].message.content.strip()
-            #
-            #         new_doc = Document()
-            #
-            #         result = re.sub(r'\*', '', result)
-            #
-            #         # Add LLM-generated content to the new document
-            #         new_doc.add_paragraph(result, style='Normal')
-            #
-            #         # Save the generated questionnaire
-            #         output_file_path = folder_path / "Generated_Discovery_Questionnaire.docx"
-            #         new_doc.save(output_file_path)
-            #
-            #         # Upload to SharePoint
-            #         upload_questionnaire_to_sharepoint(output_file_path, project_id)
-            #         update_current_step(project_id, "Questionnaire Review")
-            #
-            #         # Remove the file after successful submission
-            #         os.remove(output_file_path)
-            #
-            #         return Response(
-            #             {
-            #                 "message": "Generated discovery questionnaire successfully."
-            #             },
-            #             status=status.HTTP_200_OK,
-            #         )
+            if user_remarks != "":
+                questionnaire_content = get_discovery_content(access_token, discovery_item_id)
+
+                user_remarks_prompt = f"""
+                Here is the discovery questionnaire content: {questionnaire_content}
+                Make changes to it based on these user remarks: {user_remarks}
+
+                Instructions:
+                - Here is the additional information for updating the discovery questionnaire based on user remarks: {all_text}
+                - Ensure that the structure and format of the provided discovery questionnaire are followed precisely.
+                - Write the output directly, do not add any meta content, add the content of discovery questionnaire ONLY
+                - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format
+                - Keep the provided discovery questionnaire content and only updated based on user remarks
+                - Questions should be relevant to the Solution Play(s) mentioned here {solution_plays_list}
+                """
+
+                result = self.gpt_response(prompt=user_remarks_prompt)
+                self.create_upload_questionnaire(result, folder_path, project_id)
+
+                return Response(
+                    {
+                        "message": "Generated discovery questionnaire successfully."
+                    },
+                    status=status.HTTP_200_OK,
+                )
 
 
             prompt = f""""
@@ -300,31 +276,8 @@ class DiscoveryQuestionnaireAPIView(APIView):
                 - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format
                 """
 
-            deployment_name_model = config("DEPLOYMENT_NAME")
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                max_tokens=10000,
-                messages=[{"role": "user", "content": prompt}]
-            )
-            result = response.choices[0].message.content.strip()
-
-            new_doc = Document()
-
-            result = re.sub(r'\*', '', result)
-
-            # Add LLM-generated content to the new document
-            new_doc.add_paragraph(result, style='Normal')
-
-            # Save the generated questionnaire
-            output_file_path = folder_path / "Generated_Discovery_Questionnaire.docx"
-            new_doc.save(output_file_path)
-
-            # Upload to SharePoint
-            upload_questionnaire_to_sharepoint(output_file_path, project_id)
-            update_current_step(project_id, "Questionnaire Review")
-
-            # Remove the file after successful submission
-            os.remove(output_file_path)
+            result = self.gpt_response(prompt=prompt)
+            self.create_upload_questionnaire(result, folder_path, project_id)
 
             return Response(
                 {
@@ -339,6 +292,37 @@ class DiscoveryQuestionnaireAPIView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+
+    def gpt_response(self, prompt):
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            max_tokens=10000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        result = response.choices[0].message.content.strip()
+        return result
+
+
+    def create_upload_questionnaire(self, result, folder_path, project_id):
+        new_doc = Document()
+
+        result = re.sub(r'\*', '', result)
+
+        # Add LLM-generated content to the new document
+        new_doc.add_paragraph(result, style='Normal')
+
+        # Save the generated questionnaire
+        output_file_path = folder_path / "Generated_Discovery_Questionnaire.docx"
+        new_doc.save(output_file_path)
+
+        # Upload to SharePoint
+        upload_questionnaire_to_sharepoint(output_file_path, project_id)
+        update_current_step(project_id, "Questionnaire Review")
+
+        # Remove the file after successful submission
+        os.remove(output_file_path)
+
+        return True
 
 class PromptResponseAPIView(APIView):
     """

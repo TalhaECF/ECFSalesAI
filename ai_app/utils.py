@@ -398,3 +398,17 @@ def get_discovery_questionnaire(access_token, project_id):
     download_url = get_file_down_url(access_token, items, project_id, delimiter="-")
     file_content = get_file_content(access_token, download_url)
     return file_content, True
+
+
+def get_discovery_content(access_token, item_id):
+    url = f"https://graph.microsoft.com/v1.0/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ7BI2nybhy9Qp-2Uu0XUmby/items/{item_id}"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = requests.get(url, headers=headers)
+    response = response.json()
+    download_url = response.get("@microsoft.graph.downloadUrl", None)
+    if not download_url:
+        raise "There was an issue while getting the Download URL from Sharepoint"
+    file_content_binary = get_file_content(access_token, download_url)
+    questionnaire_content = process_docx_content(binary_content=file_content_binary)
+
+    return questionnaire_content
