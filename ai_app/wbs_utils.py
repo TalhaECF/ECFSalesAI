@@ -1,6 +1,9 @@
 import requests
-
-from utils import get_file_content, process_docx_content
+import re
+import os
+from pathlib import Path
+from docx import Document
+from .utils import get_file_content, process_docx_content
 
 
 def get_wbs_content(access_token, item_id):
@@ -39,13 +42,14 @@ def upload_wbs_to_sharepoint(access_token, file_path, project_id):
 
         # Get existing columns
         columns_url = f"https://graph.microsoft.com/v1.0/sites/ecfdata.sharepoint.com,164f5483-ae41-4136-8ec6-8cd9645c947d,d8bd93c5-2a05-4582-90c6-d6ee8c5f409e/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ434ZGlZGR9TZe60XbJg3Dl/items/{item_id}/listItem/fields"
+        print(columns_url)
         fields_response = requests.get(columns_url, headers=headers)
 
         if fields_response.status_code != 200:
             raise Exception(f"Failed to fetch columns: {fields_response.json()}")
 
         updated_project_id = {
-            "ProjectId":project_id
+            "ProjetID":project_id
         }
 
         # Update the columns
@@ -56,3 +60,26 @@ def upload_wbs_to_sharepoint(access_token, file_path, project_id):
 
     except Exception as e:
         raise Exception(f"Error during SharePoint upload or update: {str(e)}")
+
+
+def create_upload_wbs(access_token, result, project_id):
+    folder_path = Path(".")
+    new_doc = Document()
+
+    result = re.sub(r'\*', '', result)
+
+    # Add LLM-generated content to the new document
+    new_doc.add_paragraph(result, style='Normal')
+
+    # Save the generated questionnaire
+    output_file_path = folder_path / "Generated_Discovery_Questionnaire.docx"
+    new_doc.save(output_file_path)
+
+    # Upload to SharePoint
+    upload_wbs_to_sharepoint(access_token, output_file_path, project_id)
+    # update_current_step(project_id, "Questionnaire Review")
+
+    # Remove the file after successful submission
+    os.remove(output_file_path)
+
+    return True

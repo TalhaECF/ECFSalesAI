@@ -16,7 +16,17 @@ from pathlib import Path
 from openai import AzureOpenAI
 from docx import Document
 from .copilot_utils import complete_process
-# sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from .wbs_utils import get_wbs_content, create_upload_wbs
+from .common import CommonUtils
+
+
+# Initialize OpenAI client
+client = AzureOpenAI(
+    api_key=config("OPENAI_API_KEY"),
+    api_version=config("OPENAI_API_VERSION"),
+    azure_endpoint = config("OPENAI_API_BASE"),
+    azure_deployment=config("DEPLOYMENT_NAME"),
+    )
 
 
 class UploadFileToSharePointView(APIView):
@@ -49,6 +59,7 @@ class UploadFileToSharePointView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 class InitialFormResponseView(APIView):
     """
     Fetch the Discovery Questionnaire file for a specific project ID.
@@ -76,75 +87,55 @@ class InitialFormResponseView(APIView):
             return Response({"error": str(e)}, status=500)
 
 
-
-class DiscoveryQuestionnaireView(APIView):
-    """
-    Fetch the Discovery Questionnaire file for a specific project ID.
-    """
-    http_method_names = ['get', 'head', 'post']
-
-    # def get(self, request):
-    #     return Response("SUCCESS", status=200)
-
-    def post(self, request):
-        try:
-            site_id = config("SITE_ID")
-            # Define the library path for Discovery Questionnaire files
-            discovery_library_path = "Discovery Questionnaires"
-
-            # Get project_id from the request body
-            project_id = request.data.get("project_id")
-            if not project_id:
-                return Response({"error": "Project ID is required."}, status=400)
-
-            # Get access token
-            # access_token = get_access_token()
-            # print(f"TOKEN: {access_token}")
-
-            # Fetch the file
-            # file_data = get_file_by_project_id(
-            #     site_id=site_id,
-            #     library_path=discovery_library_path,
-            #     project_id=project_id,
-            #     access_token=access_token,
-            # )
-
-            # return Response({"file": file_data})
-            return Response("SUCCESS", status=200)
-        except Exception as e:
-            return Response({"error": str(e)}, status=500)
-
-
 class WBSDocumentView(APIView):
     """
     Fetch the WBS Document file for a specific project ID.
     """
+    http_method_names = ['get', 'head', 'post']
     def post(self, request):
         try:
-            site_id = config("SITE_ID")
-            # Define the library path for WBS files
-            wbs_library_path = "WBS Documents"
 
-            # Get project_id from the request body
-            project_id = request.data.get("project_id")
-            if not project_id:
-                return Response({"error": "Project ID is required."}, status=400)
-
-            # Get access token
+            user_remarks = request.data.get("message")
             access_token = get_access_token()
+            project_id = request.data.get("project_id")
+            wbs_item_id = request.data.get("wbs_item_id")
 
-            # Fetch the file
-            # file_data = get_file_by_project_id(
-            #     site_id=site_id,
-            #     library_path=wbs_library_path,
-            #     project_id=project_id,
-            #     access_token=access_token,
-            # )
+            if user_remarks != "":
+                wbs_content = get_wbs_content(access_token, wbs_item_id)
+                prompt = f"""
+                                WBS Content: {wbs_content}
 
-            # return Response({"file": file_data})
+                                Instructions:
+                                - Update WBS Document based on these user remarks: {user_remarks}
+                                - Ensure that the structure and format of the provided discovery questionnaire are followed precisely.
+                                - Write the output directly, do not add any meta content, add the content of discovery questionnaire ONLY
+                                - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format
+                                """
+
+
+                self.wbs_process(access_token, prompt, project_id)
+                return Response("SUCCESS", status=200)
+
+            prompt = f"""
+                Generate a detailed WBS Document
+
+                Instructions:
+                - Ensure that the structure and format of the provided discovery questionnaire are followed precisely.
+                - Write the output directly, do not add any meta content, add the content of discovery questionnaire ONLY
+                - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format
+                """
+
+            self.wbs_process(access_token, prompt, project_id)
+
             return Response("SUCCESS", status=200)
         except Exception as e:
             return Response({"error": str(e)}, status=500)
+
+
+    def wbs_process(self, access_token, prompt, project_id):
+        result = CommonUtils.gpt_response(client, prompt)
+        create_upload_wbs(access_token, result, project_id)
+        return True
 
 
 class OAuthRedirectView(View):
@@ -184,13 +175,6 @@ class OAuthRedirectView(View):
             return JsonResponse({"error": response.json()}, status=response.status_code)
 
 
-# Initialize OpenAI client
-client = AzureOpenAI(
-    api_key=config("OPENAI_API_KEY"),
-    api_version=config("OPENAI_API_VERSION"),
-    azure_endpoint = config("OPENAI_API_BASE"),
-    azure_deployment=config("DEPLOYMENT_NAME"),
-    )
 
 
 class DiscoveryQuestionnaireAPIView(APIView):
@@ -231,7 +215,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
             all_text, discovery_questionnaire_text = read_and_parse_documents(folder_path)
             prompt_zero = f"Return all the solution plays in a list in json, The key must be 'SolutionPlays' and in values keep a lsit like ['SP1', 'SP2'], find Solution Plays from here: {initial_form_content}"
             solution_plays_list = gpt_response_for_sp(client, prompt_zero)
-            copilot_response, success = complete_process(message)
+            copilot_response, success = complete_process(solution_plays_list)
 
             if user_remarks != "":
                 questionnaire_content = get_discovery_content(access_token, discovery_item_id)
@@ -249,7 +233,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
                 - Questions should be relevant to the Solution Play(s) mentioned here {solution_plays_list}
                 """
 
-                result = self.gpt_response(prompt=user_remarks_prompt)
+                result = CommonUtils.gpt_response(client, user_remarks_prompt)
                 self.create_upload_questionnaire(result, folder_path, project_id)
 
                 return Response(
@@ -276,7 +260,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
                 - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format
                 """
 
-            result = self.gpt_response(prompt=prompt)
+            result = CommonUtils.gpt_response(client, prompt)
             self.create_upload_questionnaire(result, folder_path, project_id)
 
             return Response(
@@ -291,16 +275,6 @@ class DiscoveryQuestionnaireAPIView(APIView):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
-
-    def gpt_response(self, prompt):
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            max_tokens=10000,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        result = response.choices[0].message.content.strip()
-        return result
 
 
     def create_upload_questionnaire(self, result, folder_path, project_id):
