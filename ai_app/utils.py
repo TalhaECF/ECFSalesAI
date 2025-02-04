@@ -138,8 +138,9 @@ def upload_questionnaire_to_sharepoint(file_path, project_id):
         }
 
         site_id = config("SITE_ID")
+        discovery_drive = config("DISCOVERY_DRIVE")
         # Upload the file
-        upload_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ7BI2nybhy9Qp-2Uu0XUmby/root:/Discovery Questionnaire-{project_id}.docx:/content"
+        upload_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{discovery_drive}/root:/Discovery Questionnaire-{project_id}.docx:/content"
 
         with open(file_path, "rb") as file:
             response = requests.put(upload_url, headers=headers, data=file)
@@ -151,7 +152,7 @@ def upload_questionnaire_to_sharepoint(file_path, project_id):
         item_id = response.json().get("id")
 
         # Get existing columns
-        columns_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ7BI2nybhy9Qp-2Uu0XUmby/items/{item_id}/listItem/fields"
+        columns_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{discovery_drive}/items/{item_id}/listItem/fields"
         fields_response = requests.get(columns_url, headers=headers)
 
         if fields_response.status_code != 200:
@@ -183,8 +184,9 @@ def update_current_step(project_id, current_step):
         }
 
         site_id = config("SITE_ID")
+        project_list_id = config("PROJECT_LIST")
         # Update URL for CurrentStep
-        update_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/lists/12e93f47-8fde-47ef-9d8c-30864859fa02/items/{project_id}/fields"
+        update_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/lists/{project_list_id}/items/{project_id}/fields"
         update_body = {"CurrentStep": current_step}
 
         # PATCH request to update CurrentStep
@@ -357,7 +359,7 @@ def get_file_down_url(access_token, items, project_id, delimiter):
 
 def get_initial_form_by_search(access_token, item_id):
     init_form_drive=config("INITIAL_FORM_DRIVE")
-    url = f"https://graph.microsoft.com/v1.0/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ4PixS0X80bQ6ZBf1zckJxn/items/{item_id}"
+    url = f"https://graph.microsoft.com/v1.0/drives/{init_form_drive}/items/{item_id}"
     headers = {"Authorization": f"Bearer {access_token}"}
     response = requests.get(url, headers=headers)
     response = response.json()
