@@ -137,9 +137,10 @@ def upload_questionnaire_to_sharepoint(file_path, project_id):
             "Content-Type": "application/json"
         }
 
-
+        site_id = config("SITE_ID")
+        discovery_drive = config("DISCOVERY_DRIVE")
         # Upload the file
-        upload_url = f"https://graph.microsoft.com/v1.0/sites/ecfdata.sharepoint.com,164f5483-ae41-4136-8ec6-8cd9645c947d,d8bd93c5-2a05-4582-90c6-d6ee8c5f409e/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ7BI2nybhy9Qp-2Uu0XUmby/root:/Discovery Questionnaire-{project_id}.docx:/content"
+        upload_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{discovery_drive}/root:/Discovery Questionnaire-{project_id}.docx:/content"
 
         with open(file_path, "rb") as file:
             response = requests.put(upload_url, headers=headers, data=file)
@@ -151,7 +152,7 @@ def upload_questionnaire_to_sharepoint(file_path, project_id):
         item_id = response.json().get("id")
 
         # Get existing columns
-        columns_url = f"https://graph.microsoft.com/v1.0/sites/ecfdata.sharepoint.com,164f5483-ae41-4136-8ec6-8cd9645c947d,d8bd93c5-2a05-4582-90c6-d6ee8c5f409e/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ7BI2nybhy9Qp-2Uu0XUmby/items/{item_id}/listItem/fields"
+        columns_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{discovery_drive}/items/{item_id}/listItem/fields"
         fields_response = requests.get(columns_url, headers=headers)
 
         if fields_response.status_code != 200:
@@ -182,8 +183,10 @@ def update_current_step(project_id, current_step):
             "Content-Type": "application/json"
         }
 
+        site_id = config("SITE_ID")
+        project_list_id = config("PROJECT_LIST")
         # Update URL for CurrentStep
-        update_url = f"https://graph.microsoft.com/v1.0/sites/ecfdata.sharepoint.com,164f5483-ae41-4136-8ec6-8cd9645c947d,d8bd93c5-2a05-4582-90c6-d6ee8c5f409e/lists/12e93f47-8fde-47ef-9d8c-30864859fa02/items/{project_id}/fields"
+        update_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/lists/{project_list_id}/items/{project_id}/fields"
         update_body = {"CurrentStep": current_step}
 
         # PATCH request to update CurrentStep
@@ -208,8 +211,9 @@ def get_taxonomy_item_id(access_token, items):
     item_ids = [i["id"] for i in items["value"]]
     download_urls = [i["@microsoft.graph.downloadUrl"] for i in items["value"]]
 
+    TAXONOMY_DRIVE_ID = config("TAXONOMY_DRIVE_ID")
     for ind, item_id in enumerate(item_ids):
-        url = f"https://graph.microsoft.com/v1.0/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ5wiSqDwOdQRomugUc4T4s7/items/{item_id}/listItem/fields"
+        url = f"https://graph.microsoft.com/v1.0/drives/{TAXONOMY_DRIVE_ID}/items/{item_id}/listItem/fields"
         response = requests.get(url, headers=headers)
         values = response.json()
         if "isParsed" in values:
@@ -271,7 +275,8 @@ def save_response_to_json(data, file_path):
 
 
 def set_is_parsed_false(access_token, item_id):
-    url = f"https://graph.microsoft.com/v1.0/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ5wiSqDwOdQRomugUc4T4s7/items/{item_id}/listItem/fields"
+    TAXONOMY_DRIVE_ID = config("TAXONOMY_DRIVE_ID")
+    url = f"https://graph.microsoft.com/v1.0/drives/{TAXONOMY_DRIVE_ID}/items/{item_id}/listItem/fields"
     headers = {"Authorization": f"Bearer {access_token}"}
     fields = { "isParsed": "True" }
     response = requests.patch(url,json=fields ,headers=headers)
@@ -293,7 +298,8 @@ def read_json_file(file_path):
 
 
 def taxonomy_processing(client, access_token):
-    drive_url = "https://graph.microsoft.com/v1.0/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ5wiSqDwOdQRomugUc4T4s7/root/children"
+    TAXONOMY_DRIVE_ID = config("TAXONOMY_DRIVE_ID")
+    drive_url = f"https://graph.microsoft.com/v1.0/drives/{TAXONOMY_DRIVE_ID}/root/children"
     items = get_sharepoint_items(access_token, drive_url)
     if len(items) == 0:
         return "No Taxonomy file found (or) All files have already been processed!", "", False
@@ -351,10 +357,24 @@ def get_file_down_url(access_token, items, project_id, delimiter):
     download_url = item_values[target_ind]["@microsoft.graph.downloadUrl"]
     return download_url
 
+def get_initial_form_by_search(access_token, item_id):
+    init_form_drive=config("INITIAL_FORM_DRIVE")
+    url = f"https://graph.microsoft.com/v1.0/drives/{init_form_drive}/items/{item_id}"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = requests.get(url, headers=headers)
+    response = response.json()
+    download_url = response.get("@microsoft.graph.downloadUrl", None)
+    if not download_url:
+        raise "There was an issue while getting the Download URL from Sharepoint"
+    file_content_binary = get_file_content(access_token, download_url)
+    initial_form_content = process_docx_content(binary_content=file_content_binary)
+
+    return initial_form_content
 
 def get_initial_form_content(access_token, project_id):
     time.sleep(5)
-    drive_url = "https://graph.microsoft.com/v1.0/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ4PixS0X80bQ6ZBf1zckJxn/root/children"
+    initial_form_drive = config("INITIAL_FORM_DRIVE")
+    drive_url = f"https://graph.microsoft.com/v1.0/drives/{initial_form_drive}/root/children"
     #TODO: filter by project id and its download url
     items = get_sharepoint_items(access_token, drive_url)
     if len(items) == 0:
@@ -366,7 +386,8 @@ def get_initial_form_content(access_token, project_id):
 
 
 def get_discovery_questionnaire(access_token, project_id):
-    drive_url = "https://graph.microsoft.com/v1.0/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ7BI2nybhy9Qp-2Uu0XUmby/root/children"
+    DISCOVERY_DRIVE = config("DISCOVERY_DRIVE")
+    drive_url = f"https://graph.microsoft.com/v1.0/drives/{DISCOVERY_DRIVE}/root/children"
     items = get_sharepoint_items(access_token, drive_url)
 
     if len(items) == 0:

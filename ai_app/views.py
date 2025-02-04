@@ -16,6 +16,8 @@ from pathlib import Path
 from openai import AzureOpenAI
 from docx import Document
 from .copilot_utils import complete_process
+
+
 # sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -49,10 +51,12 @@ class UploadFileToSharePointView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 class InitialFormResponseView(APIView):
     """
     Fetch the Discovery Questionnaire file for a specific project ID.
     """
+
     def get(self, request, project_id):
         try:
             site_id = config("SITE_ID")
@@ -74,7 +78,6 @@ class InitialFormResponseView(APIView):
             return Response("SUCCESS", status=200)
         except Exception as e:
             return Response({"error": str(e)}, status=500)
-
 
 
 class DiscoveryQuestionnaireView(APIView):
@@ -119,6 +122,7 @@ class WBSDocumentView(APIView):
     """
     Fetch the WBS Document file for a specific project ID.
     """
+
     def post(self, request):
         try:
             site_id = config("SITE_ID")
@@ -188,9 +192,9 @@ class OAuthRedirectView(View):
 client = AzureOpenAI(
     api_key=config("OPENAI_API_KEY"),
     api_version=config("OPENAI_API_VERSION"),
-    azure_endpoint = config("OPENAI_API_BASE"),
+    azure_endpoint=config("OPENAI_API_BASE"),
     azure_deployment=config("DEPLOYMENT_NAME"),
-    )
+)
 
 
 class DiscoveryQuestionnaireAPIView(APIView):
@@ -203,11 +207,11 @@ class DiscoveryQuestionnaireAPIView(APIView):
         user_remarks = request.data.get("message")
         access_token = get_access_token()
         project_id = request.data.get("project_id")
-
+        item_id = request.data.get("item_id")
+        initial_form_content = get_initial_form_by_search(access_token, item_id)
 
         taxonomy_json = ""
         message, file_path, success = taxonomy_processing(client, access_token)
-
 
         if not success:
             print(f'Using the already existing JSON content because {message}')
@@ -216,10 +220,6 @@ class DiscoveryQuestionnaireAPIView(APIView):
 
         # Folder path where documents are stored
         folder_path = Path(".")
-
-        # initial_form_content_binary, form_success = get_file_down_url(access_token, project_id, "_")
-        # initial_form_content = process_docx_content(initial_form_content_binary)
-        # print(f"Initial Form Response for Project ID: {project_id} has been downloaded")
 
         if not folder_path.exists() or not folder_path.is_dir():
             return Response(
@@ -230,61 +230,60 @@ class DiscoveryQuestionnaireAPIView(APIView):
         try:
             # Read and parse documents
             all_text, discovery_questionnaire_text = read_and_parse_documents(folder_path)
-            prompt_zero = f"Return all the solution plays in a list in json, The key must be 'SolutionPlays' and in values keep a lsit like ['SP1', 'SP2'], find Solution Plays from here: {all_text}"
+            prompt_zero = f"Return all the solution plays in a list in json, The key must be 'SolutionPlays' and in values keep a lsit like ['SP1', 'SP2'], find Solution Plays from here: {initial_form_content}"
             solution_plays_list = gpt_response_for_sp(client, prompt_zero)
             copilot_response, success = complete_process(message)
 
-            if user_remarks != "":
-                questionnaire_content_binary, flag = get_discovery_questionnaire(access_token, project_id)
-                questionnaire_content = process_docx_content(questionnaire_content_binary)
-                print(questionnaire_content)
-
-                if flag:
-                    user_remarks_prompt = f"""
-                    Here is the discovery questionnaire content: {questionnaire_content}
-                    Make changes to it based on these user remarks: {user_remarks}
-                    
-                    Instructions:
-                    - Here is the additional information for updating the discovery questionnaire based on user remarks: {all_text}
-                    - Ensure that the structure and format of the provided discovery questionnaire are followed precisely.
-                    - Write the output directly, do not add any meta content, add the content of discovery questionnaire ONLY  
-                    - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format
-                    - Keep the provided discovery questionnaire content and only updated based on user remarks
-                    - Questions should be relevant to the Solution Play(s) mentioned here {solution_plays_list}
-                    """
-
-                    response = client.chat.completions.create(
-                        model="gpt-4o-mini",
-                        max_tokens=10000,
-                        messages=[{"role": "user", "content": user_remarks_prompt}]
-                    )
-                    result = response.choices[0].message.content.strip()
-
-                    new_doc = Document()
-
-                    result = re.sub(r'\*', '', result)
-
-                    # Add LLM-generated content to the new document
-                    new_doc.add_paragraph(result, style='Normal')
-
-                    # Save the generated questionnaire
-                    output_file_path = folder_path / "Generated_Discovery_Questionnaire.docx"
-                    new_doc.save(output_file_path)
-
-                    # Upload to SharePoint
-                    upload_questionnaire_to_sharepoint(output_file_path, project_id)
-                    update_current_step(project_id, "Questionnaire Review")
-
-                    # Remove the file after successful submission
-                    os.remove(output_file_path)
-
-                    return Response(
-                        {
-                            "message": "Generated discovery questionnaire successfully."
-                        },
-                        status=status.HTTP_200_OK,
-                    )
-
+            # if user_remarks != "":
+            #     questionnaire_content_binary, flag = get_discovery_questionnaire(access_token, project_id)
+            #     questionnaire_content = process_docx_content(questionnaire_content_binary)
+            #     print(questionnaire_content)
+            #
+            #     if flag:
+            #         user_remarks_prompt = f"""
+            #         Here is the discovery questionnaire content: {questionnaire_content}
+            #         Make changes to it based on these user remarks: {user_remarks}
+            #
+            #         Instructions:
+            #         - Here is the additional information for updating the discovery questionnaire based on user remarks: {all_text}
+            #         - Ensure that the structure and format of the provided discovery questionnaire are followed precisely.
+            #         - Write the output directly, do not add any meta content, add the content of discovery questionnaire ONLY
+            #         - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format
+            #         - Keep the provided discovery questionnaire content and only updated based on user remarks
+            #         - Questions should be relevant to the Solution Play(s) mentioned here {solution_plays_list}
+            #         """
+            #
+            #         response = client.chat.completions.create(
+            #             model="gpt-4o-mini",
+            #             max_tokens=10000,
+            #             messages=[{"role": "user", "content": user_remarks_prompt}]
+            #         )
+            #         result = response.choices[0].message.content.strip()
+            #
+            #         new_doc = Document()
+            #
+            #         result = re.sub(r'\*', '', result)
+            #
+            #         # Add LLM-generated content to the new document
+            #         new_doc.add_paragraph(result, style='Normal')
+            #
+            #         # Save the generated questionnaire
+            #         output_file_path = folder_path / "Generated_Discovery_Questionnaire.docx"
+            #         new_doc.save(output_file_path)
+            #
+            #         # Upload to SharePoint
+            #         upload_questionnaire_to_sharepoint(output_file_path, project_id)
+            #         update_current_step(project_id, "Questionnaire Review")
+            #
+            #         # Remove the file after successful submission
+            #         os.remove(output_file_path)
+            #
+            #         return Response(
+            #             {
+            #                 "message": "Generated discovery questionnaire successfully."
+            #             },
+            #             status=status.HTTP_200_OK,
+            #         )
 
             prompt = f""""
                 Based on the following discovery questionnaire, generate a new discovery questionnaire tailored specifically for the Solution Play(s) mentioned in this list: {solution_plays_list}\n 
@@ -292,12 +291,13 @@ class DiscoveryQuestionnaireAPIView(APIView):
                 For context, here is the Initial Form response with the transcript:\n\n {copilot_response} \n
                 Here is some more context which has solution plays: \n{taxonomy_json}\n
                 User Notes (must be followed): {user_remarks}
-                
+
                 Instructions:
                 - Make sure to complete the discovery questionnaire focusing exclusively on the Solution Play(s) mentioned in the Form Response and User Notes
                 - Questions should be relevant to the Solution Play(s) mentioned.
                 - Use clear numbering for each question and proper formatting for multiple-choice options (e.g., (1), (2), etc.).
                 - Ensure that the structure and format of the sample discovery questionnaire are followed precisely.
+                - Write the output directly, do not add any meta content, add the content of discovery questionnaire ONLY
                 - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format
                 """
 
@@ -388,7 +388,7 @@ class SharePointFileParserView(APIView):
             if not success:
                 return Response(message, status=404)
 
-            return Response(message,status=status.HTTP_200_OK)
+            return Response(message, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
