@@ -3,7 +3,8 @@ import re
 import os
 from pathlib import Path
 from docx import Document
-from .utils import get_file_content, process_docx_content
+import openpyxl
+from utils import get_file_content, process_docx_content
 
 
 def get_wbs_content(access_token, item_id):
@@ -83,3 +84,49 @@ def create_upload_wbs(access_token, result, project_id):
     os.remove(output_file_path)
 
     return True
+
+
+
+def add_tasks_to_excel(file_path,hours_estimate, task_titles, project_id, sheet_name="Eng WBS"):
+    """
+    Loads an Excel file, navigates to a specific sheet, and adds task data in columns H and I,
+    starting from H12 and I12.
+
+    :param file_path: Path to the Excel file.
+    :param sheet_name: Name of the worksheet to modify.
+    """
+    try:
+        # Load the workbook
+        wb = openpyxl.load_workbook(file_path)
+
+        # Select the worksheet
+        if sheet_name in wb.sheetnames:
+            sheet = wb[sheet_name]
+        else:
+            raise ValueError(f"Sheet '{sheet_name}' not found in the Excel file.")
+
+        # Dummy data for hours and tasks
+        hours_estimates = [2, 4, 6, 8, 3, 5]  # List of hours
+        task_titles = ["Design UI", "Develop API", "Testing", "Code Review", "Deployment", "Documentation"]
+
+        # Start adding data from H12 and I12
+        start_row = 12
+
+        for i, (hours, task) in enumerate(zip(hours_estimates, task_titles)):
+            row = start_row + i
+            sheet[f"H{row}"] = hours  # Hours estimate (int)
+            sheet[f"I{row}"] = task   # Task title (text)
+
+        # Save the updated file
+        file_name = f"wbs_{project_id}.xlsx"
+        wb.save(file_name)
+        print(f"Data successfully added to '{sheet_name}' in {file_path}")
+
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+def create_file(hours_estimate, task_titles, project_id):
+    # Call the function
+    file_path = "wbs.xlsx"  # Update this with the actual file path
+    add_tasks_to_excel(file_path, hours_estimate, task_titles, project_id)

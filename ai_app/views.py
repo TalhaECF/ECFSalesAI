@@ -99,17 +99,23 @@ class WBSDocumentView(APIView):
             access_token = get_access_token()
             project_id = request.data.get("project_id")
             wbs_item_id = request.data.get("wbs_item_id")
+            filled_questionnaire = request.data.get("questionnaire_id")
 
             if user_remarks != "":
                 wbs_content = get_wbs_content(access_token, wbs_item_id)
                 prompt = f"""
                                 WBS Content: {wbs_content}
+                                Here is the filled discovery questionnaire: {filled_questionnaire}
 
                                 Instructions:
                                 - Update WBS Document based on these user remarks: {user_remarks}
                                 - Ensure that the structure and format of the provided discovery questionnaire are followed precisely.
                                 - Write the output directly, do not add any meta content, add the content of discovery questionnaire ONLY
                                 - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format
+                                
+                                Output format:
+                                - Make sure the response is in JSON, and it must have 2 keys i.e. hours and tasks
+                                - like {"hours":["1","2"], "tasks":["task1", "task2"]}
                                 """
 
 
@@ -118,11 +124,16 @@ class WBSDocumentView(APIView):
 
             prompt = f"""
                 Generate a detailed WBS Document
+                Here is the filled discovery questionnaire: {filled_questionnaire}
 
                 Instructions:
                 - Ensure that the structure and format of the provided discovery questionnaire are followed precisely.
                 - Write the output directly, do not add any meta content, add the content of discovery questionnaire ONLY
                 - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format
+                
+                Output format:
+                - Make sure the response is in JSON, and it must have 2 keys i.e. hours and tasks
+                - like {"hours":["1","2"], "tasks":["task1", "task2"]}
                 """
 
             self.wbs_process(access_token, prompt, project_id)
@@ -133,7 +144,7 @@ class WBSDocumentView(APIView):
 
 
     def wbs_process(self, access_token, prompt, project_id):
-        result = CommonUtils.gpt_response(client, prompt)
+        result = CommonUtils.gpt_response_json(client, prompt)
         create_upload_wbs(access_token, result, project_id)
         return True
 
