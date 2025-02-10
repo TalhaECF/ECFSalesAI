@@ -3,8 +3,9 @@ import re
 import os
 from pathlib import Path
 from docx import Document
+from decouple import config
 import openpyxl
-from utils import get_file_content, process_docx_content
+from .utils import get_file_content, process_docx_content
 
 
 def get_wbs_content(access_token, item_id):
@@ -28,9 +29,10 @@ def upload_wbs_to_sharepoint(access_token, file_path, project_id):
             "Content-Type": "application/json"
         }
 
-
+        site_id = config("SITE_ID")
+        wbs_drive_id = config("WBS_DRIVE")
         # Upload the file
-        upload_url = f"https://graph.microsoft.com/v1.0/sites/ecfdata.sharepoint.com,164f5483-ae41-4136-8ec6-8cd9645c947d,d8bd93c5-2a05-4582-90c6-d6ee8c5f409e/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ434ZGlZGR9TZe60XbJg3Dl/root:/WBS-{project_id}.docx:/content"
+        upload_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{wbs_drive_id}/root:/WBS-{project_id}.xlsx:/content"
 
         with open(file_path, "rb") as file:
             response = requests.put(upload_url, headers=headers, data=file)
@@ -42,7 +44,7 @@ def upload_wbs_to_sharepoint(access_token, file_path, project_id):
         item_id = response.json().get("id")
 
         # Get existing columns
-        columns_url = f"https://graph.microsoft.com/v1.0/sites/ecfdata.sharepoint.com,164f5483-ae41-4136-8ec6-8cd9645c947d,d8bd93c5-2a05-4582-90c6-d6ee8c5f409e/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ434ZGlZGR9TZe60XbJg3Dl/items/{item_id}/listItem/fields"
+        columns_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{wbs_drive_id}/items/{item_id}/listItem/fields"
         print(columns_url)
         fields_response = requests.get(columns_url, headers=headers)
 
@@ -64,17 +66,7 @@ def upload_wbs_to_sharepoint(access_token, file_path, project_id):
 
 
 def create_upload_wbs(access_token, result, project_id):
-    folder_path = Path(".")
-    new_doc = Document()
-
-    result = re.sub(r'\*', '', result)
-
-    # Add LLM-generated content to the new document
-    new_doc.add_paragraph(result, style='Normal')
-
-    # Save the generated questionnaire
-    output_file_path = folder_path / "Generated_Discovery_Questionnaire.docx"
-    new_doc.save(output_file_path)
+    output_file_path = create_file(result, project_id)
 
     # Upload to SharePoint
     upload_wbs_to_sharepoint(access_token, output_file_path, project_id)
@@ -86,13 +78,14 @@ def create_upload_wbs(access_token, result, project_id):
     return True
 
 
-
-def add_tasks_to_excel(file_path,hours_estimate, task_titles, project_id, sheet_name="Eng WBS"):
+def add_tasks_to_excel(file_path, phases_data, project_id, sheet_name="Eng WBS"):
     """
-    Loads an Excel file, navigates to a specific sheet, and adds task data in columns H and I,
-    starting from H12 and I12.
+    Loads an Excel file, navigates to a specific sheet, and adds task data from the phases_data dictionary,
+    inserting hours and task titles into specific columns for each phase.
 
     :param file_path: Path to the Excel file.
+    :param phases_data: Dictionary containing phase-wise hours and tasks.
+    :param project_id: Project ID for naming the file.
     :param sheet_name: Name of the worksheet to modify.
     """
     try:
@@ -105,28 +98,38 @@ def add_tasks_to_excel(file_path,hours_estimate, task_titles, project_id, sheet_
         else:
             raise ValueError(f"Sheet '{sheet_name}' not found in the Excel file.")
 
-        # Dummy data for hours and tasks
-        hours_estimates = [2, 4, 6, 8, 3, 5]  # List of hours
-        task_titles = ["Design UI", "Develop API", "Testing", "Code Review", "Deployment", "Documentation"]
+        # Define starting row and column mappings for each phase
+        phases_columns = {
+            "phase1": ["C", "D", 11],
+            "phase2": ["H", "I", 9],
+            "phase3": ["M", "N", 9],
+            "phase4": ["R", "S", 9]
+        }
 
-        # Start adding data from H12 and I12
-        start_row = 12
+        # Iterate over each phase and add data to corresponding columns
+        for phase, (hours_col, task_col, start_row) in phases_columns.items():
+            if phase in phases_data:
+                hours_list = phases_data[phase].get("hours", [])
+                tasks_list = phases_data[phase].get("tasks", [])
 
-        for i, (hours, task) in enumerate(zip(hours_estimates, task_titles)):
-            row = start_row + i
-            sheet[f"H{row}"] = hours  # Hours estimate (int)
-            sheet[f"I{row}"] = task   # Task title (text)
+                for i, (hours, task) in enumerate(zip(hours_list, tasks_list)):
+                    row = start_row + i
+                    sheet[f"{hours_col}{row}"] = hours  # Hours estimate
+                    sheet[f"{task_col}{row}"] = task  # Task title
 
         # Save the updated file
         file_name = f"wbs_{project_id}.xlsx"
         wb.save(file_name)
-        print(f"Data successfully added to '{sheet_name}' in {file_path}")
+        print(f"Data successfully added to '{sheet_name}' in {file_name}")
+        return file_name
 
     except Exception as e:
         print(f"Error: {e}")
+        return None
 
-
-def create_file(hours_estimate, task_titles, project_id):
+def create_file(ai_response, project_id):
     # Call the function
-    file_path = "wbs.xlsx"  # Update this with the actual file path
-    add_tasks_to_excel(file_path, hours_estimate, task_titles, project_id)
+    file_path = "ai_app/wbs.xlsx"
+    json_ai_response = eval(ai_response)
+    file_name = add_tasks_to_excel(file_path, json_ai_response, project_id)
+    return file_name
