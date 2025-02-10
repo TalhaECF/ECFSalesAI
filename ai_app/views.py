@@ -16,9 +16,16 @@ from pathlib import Path
 from openai import AzureOpenAI
 from docx import Document
 from .copilot_utils import complete_process
+from .wbs_utils import get_wbs_content, create_upload_wbs
+from .common import CommonUtils
 
-
-# sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Initialize OpenAI client
+client = AzureOpenAI(
+    api_key=config("OPENAI_API_KEY"),
+    api_version=config("OPENAI_API_VERSION"),
+    azure_endpoint = config("OPENAI_API_BASE"),
+    azure_deployment=config("DEPLOYMENT_NAME"),
+    )
 
 
 class UploadFileToSharePointView(APIView):
@@ -123,32 +130,34 @@ class WBSDocumentView(APIView):
     Fetch the WBS Document file for a specific project ID.
     """
 
+    http_method_names = ['get', 'head', 'post']
     def post(self, request):
         try:
-            site_id = config("SITE_ID")
-            # Define the library path for WBS files
-            wbs_library_path = "WBS Documents"
 
-            # Get project_id from the request body
-            project_id = request.data.get("project_id")
-            if not project_id:
-                return Response({"error": "Project ID is required."}, status=400)
-
-            # Get access token
+            user_remarks = request.data.get("message")
             access_token = get_access_token()
+            project_id = request.data.get("project_id")
+            wbs_item_id = request.data.get("wbs_item_id", None)
 
-            # Fetch the file
-            # file_data = get_file_by_project_id(
-            #     site_id=site_id,
-            #     library_path=wbs_library_path,
-            #     project_id=project_id,
-            #     access_token=access_token,
-            # )
+            questionnaire_content = get_discovery_questionnaire(access_token, project_id)
 
-            # return Response({"file": file_data})
+            if user_remarks != "":
+                # wbs_content = get_wbs_content(access_token, wbs_item_id)
+                prompt = CommonUtils.load_prompt_with_remarks(user_remarks, questionnaire_content, wbs_content="")
+                self.wbs_process(access_token, prompt, project_id)
+                return Response("SUCCESS", status=200)
+
+            prompt = CommonUtils.load_prompt_without_remarks(questionnaire_content)
+            self.wbs_process(access_token, prompt, project_id)
+
             return Response("SUCCESS", status=200)
         except Exception as e:
             return Response({"error": str(e)}, status=500)
+
+    def wbs_process(self, access_token, prompt, project_id):
+        result = CommonUtils.gpt_response_json(client, prompt)
+        create_upload_wbs(access_token, result, project_id)
+        return True
 
 
 class OAuthRedirectView(View):
@@ -188,13 +197,6 @@ class OAuthRedirectView(View):
             return JsonResponse({"error": response.json()}, status=response.status_code)
 
 
-# Initialize OpenAI client
-client = AzureOpenAI(
-    api_key=config("OPENAI_API_KEY"),
-    api_version=config("OPENAI_API_VERSION"),
-    azure_endpoint=config("OPENAI_API_BASE"),
-    azure_deployment=config("DEPLOYMENT_NAME"),
-)
 
 
 class DiscoveryQuestionnaireAPIView(APIView):
@@ -297,7 +299,6 @@ class DiscoveryQuestionnaireAPIView(APIView):
                 - Questions should be relevant to the Solution Play(s) mentioned.
                 - Use clear numbering for each question and proper formatting for multiple-choice options (e.g., (1), (2), etc.).
                 - Ensure that the structure and format of the sample discovery questionnaire are followed precisely.
-                - Write the output directly, do not add any meta content, add the content of discovery questionnaire ONLY
                 - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format
                 """
 

@@ -86,6 +86,34 @@ def send_user_msg(token, conv_id, message, entra_id_access_token):
         raise e
 
 
+# def get_response_from_bot(token, entra_id_access_token, conv_id):
+#     try:
+#         url = f"https://directline.botframework.com/v3/directline/conversations/{conv_id}/activities"
+#         headers = {
+#             'Authorization': f'Bearer {token}',
+#             # "User.AccessToken": f'Bearer {entra_id_access_token}'
+#         }
+#         requests.request("GET", url, headers=headers)
+#         time.sleep(4)
+#         response = requests.request("GET", url, headers=headers)
+#         time.sleep(3)
+#         response = requests.request("GET", url, headers=headers)
+#         time.sleep(3)
+#         if response.status_code == 200:
+#             time.sleep(2)
+#             activities = response.json().get('activities', [])
+#             print(len(activities))
+#             print(json.dumps(activities))
+#             if activities:
+#                 bot_response = str(activities[-2]["text"])
+#                 print(bot_response)
+#                 return bot_response, True
+#
+#         return "", False
+#     except Exception as e:
+#         raise e
+
+
 def get_response_from_bot(token, entra_id_access_token, conv_id):
     try:
         url = f"https://directline.botframework.com/v3/directline/conversations/{conv_id}/activities"
@@ -93,22 +121,21 @@ def get_response_from_bot(token, entra_id_access_token, conv_id):
             'Authorization': f'Bearer {token}',
             # "User.AccessToken": f'Bearer {entra_id_access_token}'
         }
-        requests.request("GET", url, headers=headers)
-        time.sleep(4)
-        response = requests.request("GET", url, headers=headers)
-        time.sleep(3)
-        response = requests.request("GET", url, headers=headers)
-        time.sleep(3)
-        if response.status_code == 200:
-            time.sleep(2)
-            activities = response.json().get('activities', [])
-            print(len(activities))
-            print(json.dumps(activities))
-            if activities:
-                bot_response = str(activities[-2]["text"])
-                print(bot_response)
-                return bot_response, True
 
+        attempts = 0
+        while attempts < 10:
+            print(attempts)
+            response = requests.request("GET", url, headers=headers)
+            time.sleep(3)  # Pause between requests
+            if response.status_code == 200:
+                activities = response.json().get('activities', [])
+                if len(activities) == 9:
+                    bot_response = str(activities[-2]["text"])
+                    print(bot_response)
+                    return bot_response, True
+            attempts += 1
+
+        # If the desired condition is not met within 10 attempts
         return "", False
     except Exception as e:
         raise e
