@@ -9,7 +9,8 @@ from .utils import get_file_content, process_docx_content
 
 
 def get_wbs_content(access_token, item_id):
-    url = f"https://graph.microsoft.com/v1.0/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ434ZGlZGR9TZe60XbJg3Dl/items/{item_id}"
+    wbs_drive_id = config("WBS_DRIVE")
+    url = f"https://graph.microsoft.com/v1.0/drives/{wbs_drive_id}/items/{item_id}"
     headers = {"Authorization": f"Bearer {access_token}"}
     response = requests.get(url, headers=headers)
     response = response.json()
@@ -128,7 +129,6 @@ def add_tasks_to_excel(file_path, phases_data, project_id, sheet_name="Eng WBS")
         return None
 
 def create_file(ai_response, project_id):
-    # Call the function
     file_path = "ai_app/wbs.xlsx"
     json_ai_response = eval(ai_response)
     file_name = add_tasks_to_excel(file_path, json_ai_response, project_id)

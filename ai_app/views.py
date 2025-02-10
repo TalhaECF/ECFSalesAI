@@ -19,7 +19,6 @@ from .copilot_utils import complete_process
 from .wbs_utils import get_wbs_content, create_upload_wbs
 from .common import CommonUtils
 
-
 # Initialize OpenAI client
 client = AzureOpenAI(
     api_key=config("OPENAI_API_KEY"),
@@ -99,67 +98,21 @@ class WBSDocumentView(APIView):
             access_token = get_access_token()
             project_id = request.data.get("project_id")
             wbs_item_id = request.data.get("wbs_item_id", None)
-            filled_questionnaire = request.data.get("questionnaire_id", None)
+
+            questionnaire_content = get_discovery_questionnaire(access_token, project_id)
 
             if user_remarks != "":
-                wbs_content = get_wbs_content(access_token, wbs_item_id)
-                prompt = f"""
-                                WBS Content: {wbs_content}
-                                Here is the filled discovery questionnaire: {filled_questionnaire}
-
-                                Instructions:
-                                - Update WBS Document based on these user remarks: {user_remarks}
-                                - Ensure that the structure and format of the provided discovery questionnaire are followed precisely.
-                                - Write the output directly, do not add any meta content, add the content of discovery questionnaire ONLY
-                                - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format
-                                
-                                Output format:
-                                - Make sure the response is in JSON, and it must have 2 keys i.e. hours and tasks
-                                - like {"hours":["1","2"], "tasks":["task1", "task2"]}
-                                """
-
-
+                # wbs_content = get_wbs_content(access_token, wbs_item_id)
+                prompt = CommonUtils.load_prompt_with_remarks(user_remarks, questionnaire_content, wbs_content="")
                 self.wbs_process(access_token, prompt, project_id)
                 return Response("SUCCESS", status=200)
 
-            prompt = f"""
-            Generate a detailed WBS Document
-            Instructions:
-            - Ensure that the structure and format of the provided discovery questionnaire are followed precisely.
-            - Write the output directly, do not add any meta content, add the content of discovery questionnaire ONLY.
-            - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format.
-
-            Output format:
-            - The response must be a valid JSON object with 4 JSON objects (phase1, phase2, phase3, phase4)
-            - Each object must have two keys: "hours" and "tasks"
-            - do not add any sub-tasks, the main tasks must cover all the plan for each phase completion
-            - Example output format:
-            {{ 
-              "phase1" : {{
-                  "hours": [1,  2],
-                  "tasks": ["task1", "task2"]
-              }},
-              "phase2" : {{
-                  "hours": [1,  2],
-                  "tasks": ["task1", "task2"]
-              }},
-              "phase3" : {{
-                  "hours": [1, 2],
-                  "tasks": ["task1", "task2"]
-              }},
-              "phase4" : {{
-                  "hours": [1, 2],
-                  "tasks": ["task1", "task2"]
-              }}
-              }}
-            """
-
+            prompt = CommonUtils.load_prompt_without_remarks(questionnaire_content)
             self.wbs_process(access_token, prompt, project_id)
 
             return Response("SUCCESS", status=200)
         except Exception as e:
             return Response({"error": str(e)}, status=500)
-
 
     def wbs_process(self, access_token, prompt, project_id):
         result = CommonUtils.gpt_response_json(client, prompt)
