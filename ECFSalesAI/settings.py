@@ -27,7 +27,8 @@ DEBUG = True
 
 # https://d0f5-20-172-5-28.ngrok-free.app/redirect/
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'ecfsalesai2-c4fsb9fjadb8gfb7.eastus2-01.azurewebsites.net',
-                 'ecfsalesaitesting-hadread0eec8dvee.eastus2-01.azurewebsites.net']
+                 'ecfsalesaitesting-hadread0eec8dvee.eastus2-01.azurewebsites.net',
+                 'ecfsalesaitesting2-hqgvaac4c6ayh2gu.eastus2-01.azurewebsites.net']
 
 
 # Application definition
