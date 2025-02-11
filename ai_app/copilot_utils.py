@@ -123,6 +123,7 @@ def get_response_from_bot(token, entra_id_access_token, conv_id):
         }
 
         attempts = 0
+
         while attempts < 10:
             print(attempts)
             response = requests.request("GET", url, headers=headers)
