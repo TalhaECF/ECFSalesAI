@@ -2,6 +2,7 @@ Generate a comprehensive WBS (Work Breakdown Structure) document from an enginee
 
 Here is the discovery questionnaire: {questionnaire_content}
 Current WBS Content: {wbs_content}
+Helpful links with Topics: {copilot_response}
 
 Instructions:
 - Update WBS Document based on these user remarks (Critically important to follow): {user_remarks}

@@ -140,10 +140,17 @@ class WBSDocumentView(APIView):
             wbs_item_id = request.data.get("wbs_item_id", None)
 
             questionnaire_content = get_discovery_questionnaire(access_token, project_id)
+            copilot_message = f"""
+                Based on this Discovery questionnaire Content, give all relevant MS Docs links and Technical Topic Names:
+                {questionnaire_content}
+            """
+            copilot_response, success = complete_process(copilot_message)
+            print(copilot_response)
 
             if user_remarks != "":
                 # wbs_content = get_wbs_content(access_token, wbs_item_id)
-                prompt = CommonUtils.load_prompt_with_remarks(user_remarks, questionnaire_content, wbs_content="")
+                prompt = CommonUtils.load_prompt_with_remarks(user_remarks, questionnaire_content,
+                                                              copilot_response=copilot_response, wbs_content="")
                 self.wbs_process(access_token, prompt, project_id)
                 return Response("SUCCESS", status=200)
 
