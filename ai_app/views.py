@@ -16,8 +16,8 @@ from pathlib import Path
 from openai import AzureOpenAI
 from docx import Document
 from .copilot_utils import complete_process
-from .wbs_utils import get_wbs_content, create_upload_wbs
-from .common import CommonUtils
+from .wbs_utils import get_wbs_content, create_upload_wbs, read_tasks_from_excel
+from .common import CommonUtils, get_summaries_from_text
 
 # Initialize OpenAI client
 client = AzureOpenAI(
@@ -140,14 +140,26 @@ class WBSDocumentView(APIView):
             wbs_item_id = request.data.get("wbs_item_id", None)
 
             questionnaire_content = get_discovery_questionnaire(access_token, project_id)
+            prompt_zero = (f"Return all the solution plays in a list in json, The key must be 'SolutionPlays' and in values keep a list like ['Solution PLay1', 'Solution Play2']"
+                           f"Figure out Solution Plays from this filled Discovery Questionnaire Content{questionnaire_content}")
+            solution_plays_list = gpt_response_for_sp(client, prompt_zero)
+            copilot_prompt = f"""
+                                Solution plays: {solution_plays_list}
+                                Give all helpful MS Docs learning links along with Technical Topics name related to these Solution plays
+                                Make sure to add helpful links of relevant docs
+                            """
+            copilot_response, success = complete_process(copilot_prompt)
+            summarized_content = get_summaries_from_text(client, copilot_response)
+            copilot_response = f"{copilot_response}\n Here is the more context: {summarized_content}"
 
             if user_remarks != "":
-                # wbs_content = get_wbs_content(access_token, wbs_item_id)
-                prompt = CommonUtils.load_prompt_with_remarks(user_remarks, questionnaire_content, wbs_content="")
+                wbs_data = get_wbs_content(access_token, wbs_item_id)
+                prompt = CommonUtils.load_prompt_with_remarks(user_remarks, copilot_response,
+                                                              questionnaire_content, wbs_data)
                 self.wbs_process(access_token, prompt, project_id)
                 return Response("SUCCESS", status=200)
 
-            prompt = CommonUtils.load_prompt_without_remarks(questionnaire_content)
+            prompt = CommonUtils.load_prompt_without_remarks(questionnaire_content, copilot_response)
             self.wbs_process(access_token, prompt, project_id)
 
             return Response("SUCCESS", status=200)
@@ -232,9 +244,14 @@ class DiscoveryQuestionnaireAPIView(APIView):
         try:
             # Read and parse documents
             all_text, discovery_questionnaire_text = read_and_parse_documents(folder_path)
-            prompt_zero = f"Return all the solution plays in a list in json, The key must be 'SolutionPlays' and in values keep a lsit like ['SP1', 'SP2'], find Solution Plays from here: {initial_form_content}"
+            prompt_zero = f"Return all the solution plays in a list in json, The key must be 'SolutionPlays' and in values keep a list like ['SP1', 'SP2'], find Solution Plays from here: {initial_form_content}"
             solution_plays_list = gpt_response_for_sp(client, prompt_zero)
-            copilot_response, success = complete_process(message)
+            copilot_prompt = f"""
+                    Solution plays: {solution_plays_list}
+                    Give all helpful MS Docs learning links along with Technical Topics name related to these Solution plays
+                    Make sure to add helpful links of relevant docs
+                """
+            copilot_response, success = complete_process(copilot_prompt)
 
             # if user_remarks != "":
             #     questionnaire_content_binary, flag = get_discovery_questionnaire(access_token, project_id)

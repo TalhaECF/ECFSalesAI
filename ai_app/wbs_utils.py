@@ -1,3 +1,6 @@
+import tempfile
+import time
+
 import requests
 import re
 import os
@@ -17,8 +20,22 @@ def get_wbs_content(access_token, item_id):
     download_url = response.get("@microsoft.graph.downloadUrl", None)
     if not download_url:
         raise "There was an issue while getting the Download URL from Sharepoint"
-    file_content_binary = get_file_content(access_token, download_url)
-    wbs_content = process_docx_content(binary_content=file_content_binary)
+
+    # Download the file
+    file_response = requests.get(download_url)
+    if file_response.status_code != 200:
+        raise Exception("Failed to download the WBS file from SharePoint")
+
+    # Save the file locally
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as temp_file:
+        temp_filename = temp_file.name
+        temp_file.write(file_response.content)
+
+    # Read the Excel content
+    wbs_content = read_tasks_from_excel(temp_filename)
+
+    # Cleanup the temporary file
+    os.remove(temp_filename)
 
     return wbs_content
 
@@ -120,6 +137,7 @@ def add_tasks_to_excel(file_path, phases_data, project_id, sheet_name="Eng WBS")
 
         # Save the updated file
         file_name = f"wbs_{project_id}.xlsx"
+        time.sleep(4)
         wb.save(file_name)
         print(f"Data successfully added to '{sheet_name}' in {file_name}")
         return file_name
@@ -133,3 +151,61 @@ def create_file(ai_response, project_id):
     json_ai_response = eval(ai_response)
     file_name = add_tasks_to_excel(file_path, json_ai_response, project_id)
     return file_name
+
+
+def read_tasks_from_excel(file_path, sheet_name="Eng WBS"):
+    """
+    Reads tasks and hours from an Excel sheet and returns them in a structured dictionary.
+
+    :param file_path: Path to the Excel file.
+    :param sheet_name: Name of the worksheet to read from.
+    :return: Dictionary containing phase-wise tasks and hours.
+    """
+    try:
+        # Load the workbook
+        wb = openpyxl.load_workbook(file_path, data_only=True)
+        sheet = wb[sheet_name]
+
+        # Define starting row and column mappings for each phase
+        phases_columns = {
+            "phase1": ["C", "D", 11],
+            "phase2": ["H", "I", 9],
+            "phase3": ["M", "N", 9],
+            "phase4": ["R", "S", 9]
+        }
+
+        phases_data = {}
+
+        for phase, (hours_col, task_col, start_row) in phases_columns.items():
+            hours_list = []
+            tasks_list = []
+            row = start_row
+
+            while True:
+                hours_cell = sheet[f"{hours_col}{row}"].value
+                task_cell = sheet[f"{task_col}{row}"].value
+
+                if hours_cell is None and task_cell is None:
+                    break  # Stop if both columns are empty
+
+                if hours_cell is not None:
+                    hours_list.append(hours_cell)
+                else:
+                    hours_list.append("")  # Maintain index alignment
+
+                if task_cell is not None:
+                    tasks_list.append(task_cell)
+                else:
+                    tasks_list.append("")
+
+                row += 1
+
+            if hours_list or tasks_list:
+                phases_data[phase] = {"hours": hours_list, "tasks": tasks_list}
+
+        wb.close()
+        return phases_data
+
+    except Exception as e:
+        print(f"Error reading Excel file: {e}")
+        return None

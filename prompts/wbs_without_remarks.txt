@@ -9,6 +9,7 @@ Instructions:
 - Ensure an appropriate distribution of effort by breaking down tasks into granular sub-tasks, rather than grouping them into broad tasks with excessive hours.
 - List out each task explicitly, covering dependencies and sequential progress across the four phases.
 - The output should be purely content-based with no additional meta-information.
+- Here is extra context from copilot: {copilot_response}
 
 **Output Format:**
 - The response must be a valid JSON object structured as follows:
