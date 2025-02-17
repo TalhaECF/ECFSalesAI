@@ -215,7 +215,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
     """
     API View to handle document parsing and generating discovery questionnaires in Markdown format.
     """
-    http_method_names = ['get', 'head', 'post']
+    http_method_names = ['get',  'post']
 
     def post(self, request, *args, **kwargs):
         user_remarks = request.data.get("message")

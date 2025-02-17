@@ -350,7 +350,7 @@ def get_file_down_url(access_token, items, project_id, delimiter):
         if len(split_name_list) > 1:
             sp_proj_id = int(re.findall(r"\d+", split_name_list[1])[0]) # ['filename', '70.docx']
             # item_proj_id = int(split_name_list[1])
-            if sp_proj_id == project_id:
+            if sp_proj_id == int(project_id):
                 target_ind = ind
                 break
 

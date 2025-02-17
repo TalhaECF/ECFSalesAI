@@ -91,6 +91,7 @@ def get_summaries_from_text(client, input_text):
     """
     # Regex pattern to extract URLs
     urls = re.findall(r'(https?://\S+)', input_text)
+    urls = set(urls)
     final_summary = ""
 
     for url in urls:
