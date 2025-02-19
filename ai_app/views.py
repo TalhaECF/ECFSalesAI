@@ -244,7 +244,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
         try:
             # Read and parse documents
             all_text, discovery_questionnaire_text = read_and_parse_documents(folder_path)
-            prompt_zero = f"Return all the solution plays in a list in json, The key must be 'SolutionPlays' and in values keep a list like ['SP1', 'SP2'], find Solution Plays from here: {initial_form_content}"
+            prompt_zero = f"Return all the solution plays in a list in json, The key must be 'SolutionPlays' and in values keep a list like ['Solution Play1', 'Solution Play2'], find Solution Plays from here: {initial_form_content}"
             solution_plays_list = gpt_response_for_sp(client, prompt_zero)
             copilot_prompt = f"""
                     Solution plays: {solution_plays_list}

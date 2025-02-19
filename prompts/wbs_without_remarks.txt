@@ -1,6 +1,6 @@
 Generate a comprehensive WBS (Work Breakdown Structure) document from an engineering perspective, covering all critical technical aspects. The document should break down tasks and estimated hours for all four phases of the migration project.
 
-Here is the discovery questionnaire: {questionnaire_content}
+Here is the filled discovery questionnaire: {questionnaire_content}
 
 Instructions:
 - Follow the structure and format of the provided discovery questionnaire.
@@ -63,6 +63,6 @@ Instructions:
   }}
 }}
 
-- Ensure that each phase has **at least 5-7 well-defined tasks**, with **balanced hours** based on task complexity.
+- Ensure that each phase has **well-defined tasks**, with **appropriate hours** (no limit on the hours and number of tasks) based on task complexity.
 - Each task must be detailed and granular, focusing on **one module or process at a time**.
 - Cover all aspects including **account migration, DNS settings, security policies, automation, compliance, testing, and post-migration support**.
