@@ -1,11 +1,14 @@
 import re
 import time
+import logging
 
 from PyPDF2 import PdfReader
 from django.http import JsonResponse
 from rest_framework.views import APIView, View
 from rest_framework.response import Response
 from rest_framework import status
+
+from .cost_estimate_utils import get_azure_service_cost
 from .utils import *
 from decouple import config
 import os
@@ -17,7 +20,7 @@ from openai import AzureOpenAI
 from docx import Document
 from .copilot_utils import complete_process
 from .wbs_utils import get_wbs_content, create_upload_wbs, read_tasks_from_excel
-from .common import CommonUtils, get_summaries_from_text
+from .common import CommonUtils, get_summaries_from_text, log_execution_time
 
 # Initialize OpenAI client
 client = AzureOpenAI(
@@ -140,6 +143,9 @@ class WBSDocumentView(APIView):
             wbs_item_id = request.data.get("wbs_item_id", None)
 
             questionnaire_content = get_discovery_questionnaire(access_token, project_id)
+
+            costs = self.cost_estimation(questionnaire_content)
+            update_current_step(project_id, "Cost Estimation - WBS", key="LoggingStatus")
             prompt_zero = (f"Return all the solution plays in a list in json, The key must be 'SolutionPlays' and in values keep a list like ['Solution PLay1', 'Solution Play2']"
                            f"Figure out Solution Plays from this filled Discovery Questionnaire Content{questionnaire_content}")
             solution_plays_list = gpt_response_for_sp(client, prompt_zero)
@@ -149,6 +155,7 @@ class WBSDocumentView(APIView):
                                 Make sure to add helpful links of relevant docs
                             """
             copilot_response, success = complete_process(copilot_prompt)
+            update_current_step(project_id, "Copilot Response - WBS", key="LoggingStatus")
             summarized_content = get_summaries_from_text(client, copilot_response)
             copilot_response = f"{copilot_response}\n Here is the more context: {summarized_content}"
 
@@ -156,20 +163,48 @@ class WBSDocumentView(APIView):
                 wbs_data = get_wbs_content(access_token, wbs_item_id)
                 prompt = CommonUtils.load_prompt_with_remarks(user_remarks, copilot_response,
                                                               questionnaire_content, wbs_data)
-                self.wbs_process(access_token, prompt, project_id)
+                self.wbs_process(access_token, prompt, project_id, costs)
                 return Response("SUCCESS", status=200)
 
             prompt = CommonUtils.load_prompt_without_remarks(questionnaire_content, copilot_response)
-            self.wbs_process(access_token, prompt, project_id)
+            self.wbs_process(access_token, prompt, project_id, costs)
 
             return Response("SUCCESS", status=200)
         except Exception as e:
             return Response({"error": str(e)}, status=500)
 
-    def wbs_process(self, access_token, prompt, project_id):
+    def wbs_process(self, access_token, prompt, project_id, costs):
         result = CommonUtils.gpt_response_json(client, prompt)
-        create_upload_wbs(access_token, result, project_id)
+        update_current_step(project_id, "OpenA API Response- WBS", key="LoggingStatus")
+        create_upload_wbs(access_token, result, project_id, costs)
+        update_current_step(project_id, "WBS Process Initiated")
+        update_current_step(project_id, "WBS uploaded - WBS", key="LoggingStatus")
         return True
+
+    @log_execution_time
+    def cost_estimation(self, questionnaire_content):
+        costs = None
+        prompt = f"""
+        Here is the filled discovery questionnaire content: {questionnaire_content}\n
+        
+        Based on this discovery questionnaire content, generate JSON Objects with serviceName and skuName
+        like:
+    {{ "servicesList":
+    {{"serviceName": "App Service", "skuName": "B1"}},
+    {{"serviceName": "Virtual Machines", "skuName": "Standard_D2s_v3"}},
+    }}
+    
+    Instructions:
+    - Make sure the response is in JSON
+    - Add all relevant serviceName and the appropriate skuName
+    - The services will be used to estimate cost, so make sure that we have Microsoft list of services
+        """
+        result_json = eval(CommonUtils.gpt_response_json(client, prompt))
+        services = result_json.get("servicesList", None)
+        if services:
+            costs = get_azure_service_cost(services)
+
+        return costs
 
 
 class OAuthRedirectView(View):

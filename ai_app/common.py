@@ -1,6 +1,10 @@
 import re
+import time
+import logging
 import requests
 import openai
+
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 class CommonUtils:
 
@@ -57,6 +61,17 @@ class CommonUtils:
 
 
 
+def log_execution_time(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        execution_time = end_time - start_time
+        logging.info(f"{func.__name__}() took {execution_time:.4f} seconds to complete")
+        return result
+    return wrapper
+
+
 def gpt_response(client, prompt):
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -80,6 +95,7 @@ def summarize_text_with_gpt(client, text):
         return f"Error during summarization: {str(e)}"
 
 
+@log_execution_time
 def get_summaries_from_text(client, input_text):
     """
     Extracts URLs from the provided input_text, browses each URL to retrieve content,
@@ -107,3 +123,4 @@ def get_summaries_from_text(client, input_text):
             final_summary += f"Error retrieving content from {url}: {str(e)}\n\n"
 
     return final_summary
+

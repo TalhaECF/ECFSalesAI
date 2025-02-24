@@ -2,6 +2,7 @@ import requests
 import time
 import json
 from decouple import config
+from .common import log_execution_time
 
 def get_access_token():
     """
@@ -141,6 +142,7 @@ def get_response_from_bot(token, entra_id_access_token, conv_id):
         raise e
 
 
+@log_execution_time
 def complete_process(message):
     try:
         response_list, success = initiate_session_copilot()

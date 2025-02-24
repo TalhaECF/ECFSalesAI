@@ -8,7 +8,7 @@ from decouple import config
 from PyPDF2 import PdfReader
 from docx import Document
 import tempfile
-
+from .common import log_execution_time
 from openai import AzureOpenAI
 
 
@@ -172,7 +172,7 @@ def upload_questionnaire_to_sharepoint(file_path, project_id):
         raise Exception(f"Error during SharePoint upload or update: {str(e)}")
 
 
-def update_current_step(project_id, current_step):
+def update_current_step(project_id, current_step, key="CurrentStep"):
     """
     Updates the CurrentStep field in the Project list for the specified project_id.
     """
@@ -187,7 +187,7 @@ def update_current_step(project_id, current_step):
         project_list_id = config("PROJECT_LIST")
         # Update URL for CurrentStep
         update_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/lists/{project_list_id}/items/{project_id}/fields"
-        update_body = {"CurrentStep": current_step}
+        update_body = {key: current_step}
 
         # PATCH request to update CurrentStep
         response = requests.patch(update_url, headers=headers, json=update_body)
@@ -255,7 +255,7 @@ def send_to_gpt(client, parsed_content):
     )
     return response.choices[0].message.content
 
-
+@log_execution_time
 def gpt_response_for_sp(client, prompt):
     deployment_name_model = config("DEPLOYMENT_NAME")
     response = client.chat.completions.create(
@@ -384,7 +384,7 @@ def get_initial_form_content(access_token, project_id):
     file_content = get_file_content(access_token, download_url)
     return file_content, True
 
-
+@log_execution_time
 def get_discovery_questionnaire(access_token, project_id):
     DISCOVERY_DRIVE = config("DISCOVERY_DRIVE")
     drive_url = f"https://graph.microsoft.com/v1.0/drives/{DISCOVERY_DRIVE}/root/children"

@@ -8,9 +8,11 @@ from pathlib import Path
 from docx import Document
 from decouple import config
 import openpyxl
+from .common import log_execution_time
 from .utils import get_file_content, process_docx_content
 
 
+@log_execution_time
 def get_wbs_content(access_token, item_id):
     wbs_drive_id = config("WBS_DRIVE")
     url = f"https://graph.microsoft.com/v1.0/drives/{wbs_drive_id}/items/{item_id}"
@@ -83,8 +85,43 @@ def upload_wbs_to_sharepoint(access_token, file_path, project_id):
         raise Exception(f"Error during SharePoint upload or update: {str(e)}")
 
 
-def create_upload_wbs(access_token, result, project_id):
+def save_costs_to_existing_excel(costs, file_path):
+    """
+    Writes Azure service cost data into an existing Excel file.
+    If the file does not exist, it creates a new one.
+    It adds the data to a sheet called 'Cost Breakdown'.
+
+    :param costs: Dictionary containing 'breakdown' with service names and their costs.
+    :param file_path: Path to the .xlsx file.
+    """
+    try:
+        # Try to load an existing workbook
+        wb = openpyxl.load_workbook(file_path)
+    except FileNotFoundError:
+        # If the file doesn't exist, create a new workbook
+        wb = openpyxl.Workbook()
+
+    # Check if 'Cost Breakdown' sheet exists, otherwise create it
+    if "Cost Breakdown" in wb.sheetnames:
+        ws = wb["Cost Breakdown"]
+    else:
+        ws = wb.create_sheet(title="Cost Breakdown")
+        ws.append(["Service Name", "Cost (USD)"])  # Add headers if new sheet
+
+    # Append new data from the costs dictionary
+    for service_name, cost in costs.get("breakdown", {}).items():
+        ws.append([service_name, cost])
+
+    # Save and close the workbook properly
+    wb.save(file_path)
+    wb.close()
+    print(f"Data successfully written to {file_path} in 'Cost Breakdown' sheet.")
+
+
+@log_execution_time
+def create_upload_wbs(access_token, result, project_id, costs):
     output_file_path = create_file(result, project_id)
+    save_costs_to_existing_excel(costs, output_file_path)
 
     # Upload to SharePoint
     upload_wbs_to_sharepoint(access_token, output_file_path, project_id)
