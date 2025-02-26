@@ -71,27 +71,38 @@ def debug_service_pricing(service_name, region="eastus"):
 
 def get_azure_service_cost(services, region="East US", hours_per_month=730, price_type="Consumption"):
     """
-    For a list of service dictionaries (each containing serviceName, skuName,
-    and optionally tier), fetch the price per hour and compute an estimated monthly cost.
+    Fetches the estimated monthly cost for a list of Azure services.
+    Now includes SKU Name and Region in the breakdown.
 
     :param services: List of dicts e.g. [{"serviceName": "Virtual Machines", "skuName": "Standard_D2s_v3"}, ...]
     :param region: Region (will be normalized)
     :param hours_per_month: Usage hours per month
     :param price_type: Pricing type filter (e.g. "Consumption")
-    :return: A dict with overall total cost and a breakdown per service.
+    :return: A dict with overall total cost and a detailed breakdown.
     """
     total_cost = 0
     cost_breakdown = {}
+
     for service in services:
         s_name = service.get("serviceName")
         sku = service.get("skuName")
         tier = service.get("tier", "")
+
         price = fetch_azure_pricing(s_name, sku, region, tier, price_type)
         if price is None:
             continue  # Skip if no price found
+
         est_cost = price * hours_per_month
-        cost_breakdown[s_name] = round(est_cost, 2)
+
+        # Store breakdown with SKU and Region
+        cost_breakdown[s_name] = {
+            "cost": round(est_cost, 2),
+            "skuName": sku,
+            "region": region
+        }
+
         total_cost += est_cost
+
     return {"total_cost": round(total_cost, 2), "breakdown": cost_breakdown}
 
 

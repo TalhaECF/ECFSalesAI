@@ -91,7 +91,7 @@ def save_costs_to_existing_excel(costs, file_path):
     If the file does not exist, it creates a new one.
     It adds the data to a sheet called 'Cost Breakdown'.
 
-    :param costs: Dictionary containing 'breakdown' with service names and their costs.
+    :param costs: Dictionary containing 'breakdown' with service names, costs, SKU names, and regions.
     :param file_path: Path to the .xlsx file.
     """
     try:
@@ -106,16 +106,21 @@ def save_costs_to_existing_excel(costs, file_path):
         ws = wb["Cost Breakdown"]
     else:
         ws = wb.create_sheet(title="Cost Breakdown")
-        ws.append(["Service Name", "Cost (USD)"])  # Add headers if new sheet
+        ws.append(["Service Name", "Cost (USD)", "SKU Name", "Region"])  # Add headers if new sheet
 
     # Append new data from the costs dictionary
-    for service_name, cost in costs.get("breakdown", {}).items():
-        ws.append([service_name, cost])
+    for service_name, cost_data in costs.get("breakdown", {}).items():
+        sku_name = cost_data.get("skuName", "N/A")
+        region = cost_data.get("region", "N/A")
+        cost = cost_data.get("cost", 0)
+
+        ws.append([service_name, cost, sku_name, region])
 
     # Save and close the workbook properly
     wb.save(file_path)
     wb.close()
     print(f"Data successfully written to {file_path} in 'Cost Breakdown' sheet.")
+
 
 
 @log_execution_time

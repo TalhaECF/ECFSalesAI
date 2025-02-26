@@ -184,22 +184,41 @@ class WBSDocumentView(APIView):
     @log_execution_time
     def cost_estimation(self, questionnaire_content):
         costs = None
-        prompt = f"""
-        Here is the filled discovery questionnaire content: {questionnaire_content}\n
-        
-        Based on this discovery questionnaire content, generate JSON Objects with serviceName and skuName
-        like:
-    {{ "servicesList":
-    {{"serviceName": "App Service", "skuName": "B1"}},
-    {{"serviceName": "Virtual Machines", "skuName": "Standard_D2s_v3"}},
-    }}
-    
-    Instructions:
+        cost_estimation_prompt = """
+        Provide a detailed cost estimation for the following Azure services (only East US)
+        For each service, include:
+        - Service Name
+        - Cost in USD
+        - SKU Name (e.g., 'Standard_D2s_v3', 'Hot LRS')
+        - Region (e.g., 'East US', 'West Europe')
+        Return the data in JSON format structured like this:
+
+        {
+  "servicesList": [
+    {
+      "serviceName": "App Service",
+      "skuName": "B1",
+      "region": "East US",
+      "tier": ""
+    },
+    {
+      "serviceName": "Virtual Machines",
+      "skuName": "Standard_D2s_v3",
+      "region": "East US",
+      "tier": "Standard"
+        }
+      ]
+    }
+
+     Instructions:
     - Make sure the response is in JSON
-    - Add all relevant serviceName and the appropriate skuName
+    - Add all relevant serviceName and the appropriate skuName, region and tier
+    - The sample serviceName, skuName, region, and tier are just example/reference
+    - Make sure the service and skuName must be available in that region under that tier
     - The services will be used to estimate cost, so make sure that we have Microsoft list of services
         """
-        result_json = eval(CommonUtils.gpt_response_json(client, prompt))
+
+        result_json = eval(CommonUtils.gpt_response_json(client, cost_estimation_prompt))
         services = result_json.get("servicesList", None)
         if services:
             costs = get_azure_service_cost(services)
