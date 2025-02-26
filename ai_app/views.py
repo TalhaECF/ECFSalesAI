@@ -177,7 +177,7 @@ class WBSDocumentView(APIView):
         result = CommonUtils.gpt_response_json(client, prompt)
         update_current_step(project_id, "OpenA API Response- WBS", key="LoggingStatus")
         create_upload_wbs(access_token, result, project_id, costs)
-        update_current_step(project_id, "WBS Process Initiated")
+        update_current_step(project_id, "WBS Review")
         update_current_step(project_id, "WBS uploaded - WBS", key="LoggingStatus")
         return True
 
@@ -212,7 +212,7 @@ class WBSDocumentView(APIView):
 
      Instructions:
     - Make sure the response is in JSON
-    - Add all relevant serviceName and the appropriate skuName, region and tier
+    - Add all relevant serviceName and the appropriate skuName, region and tier combinations
     - The sample serviceName, skuName, region, and tier are just example/reference
     - Make sure the service and skuName must be available in that region under that tier
     - The services will be used to estimate cost, so make sure that we have Microsoft list of services
