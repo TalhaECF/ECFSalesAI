@@ -69,3 +69,4 @@ Instructions:
 - Ensure that each phase has **at least 5-7 well-defined tasks**, with **balanced hours** based on task complexity.
 - Each task must be detailed and granular, focusing on **one module or process at a time**.
 - Cover all aspects including **account migration, DNS settings, security policies, automation, compliance, testing, and post-migration support**.
+- Make sure to add at least 10+ tasks for each phase (if applicable)
