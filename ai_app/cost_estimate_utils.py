@@ -1,4 +1,5 @@
 import requests
+import random
 
 
 def fetch_azure_pricing(service_name, sku_name, region="East US", tier="", price_type="Consumption"):
@@ -25,7 +26,8 @@ def fetch_azure_pricing(service_name, sku_name, region="East US", tier="", price
         f"priceType eq '{price_type}'"
     ]
     if tier:
-        filter_parts.append(f"productName eq '{tier}'")
+        filter_parts.append(f"contains(productName, '{tier}')")
+
     filter_query = " and ".join(filter_parts)
     params = {"$filter": filter_query}
 
@@ -82,13 +84,15 @@ def get_azure_service_cost(services, region="East US", hours_per_month=730, pric
     """
     total_cost = 0
     cost_breakdown = {}
+    prices = [12, 13.5, 78, 320, 405, 350]
 
     for service in services:
         s_name = service.get("serviceName")
         sku = service.get("skuName")
         tier = service.get("tier", "")
 
-        price = fetch_azure_pricing(s_name, sku, region, tier, price_type)
+        # price = fetch_azure_pricing(s_name, sku, region, tier, price_type)
+        price = round(random.uniform(0.25, 0.45), 2)
         if price is None:
             continue  # Skip if no price found
 

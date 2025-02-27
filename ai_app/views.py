@@ -363,7 +363,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
                 \n\nSample Discovery Questionnaire:\n{discovery_questionnaire_text}\n\n
                 For context, here is the Initial Form response with the transcript:\n\n {copilot_response} \n
                 Here is some more context which has solution plays: \n{taxonomy_json}\n
-                User Notes (must be followed): {user_remarks}
+                User Notes (must be followed): {user_remarks}\n
 
                 Instructions:
                 - Make sure to complete the discovery questionnaire focusing exclusively on the Solution Play(s) mentioned in the Form Response and User Notes
