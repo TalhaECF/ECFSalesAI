@@ -68,4 +68,4 @@ jobs:
         with:
           app-name: 'ECFSalesAITesting'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_B201E25855DF4291A2D0F76F32429D3E }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_28A201E47A054F048596A0AD01B0C747 }}
