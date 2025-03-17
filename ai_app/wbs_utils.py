@@ -1,6 +1,6 @@
 import tempfile
 import time
-
+from decimal import Decimal
 import requests
 import re
 import os
@@ -122,11 +122,46 @@ def save_costs_to_existing_excel(costs, file_path):
     print(f"Data successfully written to {file_path} in 'Cost Breakdown' sheet.")
 
 
+def save_cost_dict_list_to_excel(data_list, file_path):
+    """
+    Writes a list of dictionaries into an Excel file.
+    If the file does not exist, it creates a new one.
+    It adds the data to a sheet called 'Cost Breakdown'.
+
+    :param data_list: List of dictionaries with the same keys.
+    :param file_path: Path to the .xlsx file.
+    """
+    try:
+        # Try to load an existing workbook
+        wb = openpyxl.load_workbook(file_path)
+    except FileNotFoundError:
+        # If the file doesn't exist, create a new workbook
+        wb = openpyxl.Workbook()
+
+    # Check if 'Cost Breakdown' sheet exists, otherwise create it
+    if "Cost Breakdown" in wb.sheetnames:
+        ws = wb["Cost Breakdown"]
+    else:
+        ws = wb.create_sheet(title="Cost Breakdown")
+        # Write headers based on the first dictionary keys
+        headers = list(data_list[0].keys())
+        ws.append(headers)
+
+    # Append rows from the list of dictionaries
+    for row in data_list:
+        ws.append([str(row.get(col, "")) if isinstance(row.get(col), Decimal) else row.get(col, "") for col in headers])
+
+    # Save and close the workbook properly
+    wb.save(file_path)
+    wb.close()
+    print(f"Data successfully written to {file_path} in 'Cost Breakdown' sheet.")
+
 
 @log_execution_time
 def create_upload_wbs(access_token, result, project_id, costs):
     output_file_path = create_file(result, project_id)
-    save_costs_to_existing_excel(costs, output_file_path)
+    # save_costs_to_existing_excel(costs, output_file_path)
+    save_cost_dict_list_to_excel(costs, output_file_path)
 
     # Upload to SharePoint
     upload_wbs_to_sharepoint(access_token, output_file_path, project_id)

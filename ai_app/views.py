@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from .cost_estimate_utils import get_azure_service_cost
+from .cost_estimation_json import get_service_app_records
 from .utils import *
 from decouple import config
 import os
@@ -42,9 +43,6 @@ class UploadFileToSharePointView(APIView):
         """
         # Fixed SharePoint details
         site_id = "ecfdata.sharepoint.com,164f5483-ae41-4136-8ec6-8cd9645c947d,d8bd93c5-2a05-4582-90c6-d6ee8c5f409e"
-        # Overall Drive ID
-        # drive_id = "b!OJdlRo8M0UiIs2YwYMeHdR0hfZPcy2lMp0hCqCJGuD__U3HgclY1SLkSCvo2YRPl"
-        # Specific Drive ID ()
         drive_id = "b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ5dvO4nOud9SYhRy9y-sa-I"
         folder_path = "Discovery Questionnaires/"
 
@@ -73,16 +71,6 @@ class InitialFormResponseView(APIView):
             # Define the library path for Discovery Questionnaire files
             discovery_library_path = "Documents"
 
-            # Get access token
-            access_token = get_access_token()
-            # print(f"TOKEN: {access_token}")
-            # Fetch the file
-            # file_data = get_file_by_project_id(
-            #     site_id=site_id,
-            #     library_path=discovery_library_path,
-            #     project_id=project_id,
-            #     access_token=access_token,
-            # )
 
             # return Response({"file": file_data})
             return Response("SUCCESS", status=200)
@@ -109,18 +97,6 @@ class DiscoveryQuestionnaireView(APIView):
             project_id = request.data.get("project_id")
             if not project_id:
                 return Response({"error": "Project ID is required."}, status=400)
-
-            # Get access token
-            # access_token = get_access_token()
-            # print(f"TOKEN: {access_token}")
-
-            # Fetch the file
-            # file_data = get_file_by_project_id(
-            #     site_id=site_id,
-            #     library_path=discovery_library_path,
-            #     project_id=project_id,
-            #     access_token=access_token,
-            # )
 
             # return Response({"file": file_data})
             return Response("SUCCESS", status=200)
@@ -218,12 +194,15 @@ class WBSDocumentView(APIView):
     - The services will be used to estimate cost, so make sure that we have Microsoft list of services
         """
 
+        total_costs = []
         result_json = eval(CommonUtils.gpt_response_json(client, cost_estimation_prompt))
-        services = result_json.get("servicesList", None)
-        if services:
-            costs = get_azure_service_cost(services)
+        services_objects = result_json.get("servicesList", None)
+        services = [i["serviceName"] for i in services_objects]
+        for service in services:
+            cost_list = get_service_app_records(service_name=service)
+            total_costs.extend(cost_list)
 
-        return costs
+        return total_costs
 
 
 class OAuthRedirectView(View):
