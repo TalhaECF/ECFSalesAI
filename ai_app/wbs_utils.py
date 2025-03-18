@@ -153,6 +153,7 @@ def save_cost_dict_list_to_excel(data_list, file_path):
 
     # Save and close the workbook properly
     wb.save(file_path)
+    
     wb.close()
     print(f"Data successfully written to {file_path} in 'Cost Breakdown' sheet.")
 
