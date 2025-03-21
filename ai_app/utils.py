@@ -8,7 +8,7 @@ from decouple import config
 from PyPDF2 import PdfReader
 from docx import Document
 import tempfile
-
+from .common import log_execution_time
 from openai import AzureOpenAI
 
 
@@ -172,7 +172,7 @@ def upload_questionnaire_to_sharepoint(file_path, project_id):
         raise Exception(f"Error during SharePoint upload or update: {str(e)}")
 
 
-def update_current_step(project_id, current_step):
+def update_current_step(project_id, current_step, key="CurrentStep"):
     """
     Updates the CurrentStep field in the Project list for the specified project_id.
     """
@@ -187,7 +187,7 @@ def update_current_step(project_id, current_step):
         project_list_id = config("PROJECT_LIST")
         # Update URL for CurrentStep
         update_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/lists/{project_list_id}/items/{project_id}/fields"
-        update_body = {"CurrentStep": current_step}
+        update_body = {key: current_step}
 
         # PATCH request to update CurrentStep
         response = requests.patch(update_url, headers=headers, json=update_body)
@@ -255,7 +255,7 @@ def send_to_gpt(client, parsed_content):
     )
     return response.choices[0].message.content
 
-
+@log_execution_time
 def gpt_response_for_sp(client, prompt):
     deployment_name_model = config("DEPLOYMENT_NAME")
     response = client.chat.completions.create(
@@ -344,13 +344,13 @@ def get_file_down_url(access_token, items, project_id, delimiter):
     headers = {"Authorization": f"Bearer {access_token}",}
     item_values = items["value"]
     target_ind = None
-
+    time.sleep(5)
     for ind, elem in enumerate(item_values):
         split_name_list =  elem["name"].split(delimiter)
         if len(split_name_list) > 1:
             sp_proj_id = int(re.findall(r"\d+", split_name_list[1])[0]) # ['filename', '70.docx']
             # item_proj_id = int(split_name_list[1])
-            if sp_proj_id == project_id:
+            if sp_proj_id == int(project_id):
                 target_ind = ind
                 break
 
@@ -384,7 +384,7 @@ def get_initial_form_content(access_token, project_id):
     file_content = get_file_content(access_token, download_url)
     return file_content, True
 
-
+@log_execution_time
 def get_discovery_questionnaire(access_token, project_id):
     DISCOVERY_DRIVE = config("DISCOVERY_DRIVE")
     drive_url = f"https://graph.microsoft.com/v1.0/drives/{DISCOVERY_DRIVE}/root/children"
@@ -396,3 +396,17 @@ def get_discovery_questionnaire(access_token, project_id):
     download_url = get_file_down_url(access_token, items, project_id, delimiter="-")
     file_content = get_file_content(access_token, download_url)
     return file_content, True
+
+
+def get_discovery_content(access_token, item_id):
+    url = f"https://graph.microsoft.com/v1.0/drives/b!g1RPFkGuNkGOxozZZFyUfcWTvdgFKoJFkMbW7oxfQJ7BI2nybhy9Qp-2Uu0XUmby/items/{item_id}"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = requests.get(url, headers=headers)
+    response = response.json()
+    download_url = response.get("@microsoft.graph.downloadUrl", None)
+    if not download_url:
+        raise "There was an issue while getting the Download URL from Sharepoint"
+    file_content_binary = get_file_content(access_token, download_url)
+    questionnaire_content = process_docx_content(binary_content=file_content_binary)
+
+    return questionnaire_content

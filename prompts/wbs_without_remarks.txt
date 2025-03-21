@@ -1,0 +1,69 @@
+Generate a comprehensive WBS (Work Breakdown Structure) document from an engineering perspective, covering all critical technical aspects. The document should break down tasks and estimated hours for all four phases of the migration project.
+
+Here is the filled discovery questionnaire: {questionnaire_content}
+
+Instructions:
+- Follow the structure and format of the provided discovery questionnaire.
+- The WBS must be detailed and structured logically, ensuring no essential technical aspect is missed.
+- Focus on all key engineering areas, including infrastructure setup, security, authentication, integration, automation, DNS configuration, and compliance.
+- Ensure an appropriate distribution of effort by breaking down tasks into granular sub-tasks, rather than grouping them into broad tasks with excessive hours.
+- List out each task explicitly, covering dependencies and sequential progress across the four phases.
+- The output should be purely content-based with no additional meta-information.
+- Here is extra context from copilot: {copilot_response}
+
+**Output Format:**
+- The response must be a valid JSON object structured as follows:
+    - "phase1", "phase2", "phase3", "phase4"
+    - Each phase must contain:
+        - "hours" as a list corresponding to tasks
+        - "tasks" as a list of granular engineering tasks
+- Each phase must comprehensively cover all relevant technical aspects, ensuring tasks are not skipped.
+- Example output format:
+{{
+  "phase1": {{
+      "hours": [2, 3, 4, 3, 5],
+      "tasks": [
+          "Set up Azure AD in new tenant",
+          "Configure initial authentication settings (SSO, MFA)",
+          "Deploy base Microsoft 365 services",
+          "Verify email routing configuration",
+          "Establish baseline security policies"
+      ]
+  }},
+  "phase2": {{
+      "hours": [4, 6, 5, 3, 2, 4],
+      "tasks": [
+          "Migrate user accounts with permissions and roles",
+          "Transfer and validate shared mailboxes",
+          "Configure Teams and SharePoint settings",
+          "Set up Power Automate workflows in the new tenant",
+          "Validate API and third-party integrations",
+          "Ensure compliance with HIPAA, GDPR"
+      ]
+  }},
+  "phase3": {{
+      "hours": [5, 4, 3, 6, 2],
+      "tasks": [
+          "Migrate OneDrive files and user data",
+          "Validate DNS replication and email functionality",
+          "Optimize security policies and conditional access",
+          "Perform load testing on the new environment",
+          "Run security audits to verify configurations"
+      ]
+  }},
+  "phase4": {{
+      "hours": [3, 2, 4, 5, 6],
+      "tasks": [
+          "Conduct post-migration testing and validation",
+          "User training and onboarding",
+          "Monitor logs and troubleshoot performance issues",
+          "Backup strategy finalization and implementation",
+          "Optimize ongoing support and IT helpdesk readiness"
+      ]
+  }}
+}}
+
+- Ensure that each phase has **well-defined tasks**, with **appropriate hours** (no limit on the hours and number of tasks) based on task complexity.
+- Each task must be detailed and granular, focusing on **one module or process at a time**.
+- Cover all aspects including **account migration, DNS settings, security policies, automation, compliance, testing, and post-migration support**.
+- Make sure to add at least 10+ tasks for each phase (if applicable)
