@@ -285,6 +285,9 @@ class DiscoveryQuestionnaireAPIView(APIView):
                     Make sure to add helpful links of relevant docs
                 """
             copilot_response, success = complete_process(copilot_prompt)
+            with open('copilot_response.txt', 'w') as f:
+                f.write(str(copilot_response))
+                f.close()
 
             # if user_remarks != "":
             #     questionnaire_content_binary, flag = get_discovery_questionnaire(access_token, project_id)
