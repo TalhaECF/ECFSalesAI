@@ -36,9 +36,9 @@ def get_service_app_records(file_path = "cost_estimation.json", concerned_region
 
 
 # Example usage:
-if __name__ == "__main__":
-    # file_path = "cost_estimation.json"
-    records = get_service_app_records()
-    print("Matching records:")
-    for rec in records:
-        print(rec)
+# if __name__ == "__main__":
+#     # file_path = "cost_estimation.json"
+#     records = get_service_app_records()
+#     print("Matching records:")
+#     for rec in records:
+#         print(rec)
