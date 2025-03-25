@@ -1,4 +1,4 @@
-Generate a comprehensive WBS (Work Breakdown Structure) document from an engineering perspective, covering all critical technical aspects. The document should break down tasks and estimated hours for all four phases of the migration project.
+Generate a comprehensive WBS (Work Breakdown Structure) document from an engineering perspective, covering all critical technical aspects. The document should break down tasks and estimated hours for all four phases of the project.
 
 Here is the filled discovery questionnaire: {questionnaire_content}
 
@@ -9,7 +9,14 @@ Instructions:
 - Ensure an appropriate distribution of effort by breaking down tasks into granular sub-tasks, rather than grouping them into broad tasks with excessive hours.
 - List out each task explicitly, covering dependencies and sequential progress across the four phases.
 - The output should be purely content-based with no additional meta-information.
-- Here is extra context from copilot: {copilot_response}
+- Ensure that each phase has **well-defined tasks**, with **appropriate hours** (no limit on the hours and number of tasks) based on task complexity.
+- Each task must be detailed and granular, focusing on **one module or process at a time**.
+- Cover all aspects including **account migration, DNS settings, security policies, automation, compliance, testing, and post-migration support**.
+- Make sure to add at least 15+ tasks for each phase (if applicable)
+- Cover all aspects from technical point of view (like Frontend, backend, db setup, etc)
+- This project must be based in MS ecosystem
+- Here is extra context from copilot: {copilot_response}\n\n
+- And, here are the list of services used in the project: {unique_services}\n
 
 **Output Format:**
 - The response must be a valid JSON object structured as follows:
@@ -62,9 +69,3 @@ Instructions:
       ]
   }}
 }}
-
-- Ensure that each phase has **well-defined tasks**, with **appropriate hours** (no limit on the hours and number of tasks) based on task complexity.
-- Each task must be detailed and granular, focusing on **one module or process at a time**.
-- Cover all aspects including **account migration, DNS settings, security policies, automation, compliance, testing, and post-migration support**.
-- Make sure to add at least 15+ tasks for each phase (if applicable)
-- Cover all aspects from technical point of view

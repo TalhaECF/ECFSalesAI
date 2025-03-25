@@ -121,6 +121,9 @@ class WBSDocumentView(APIView):
             questionnaire_content = get_discovery_questionnaire(access_token, project_id)
 
             costs = self.cost_estimation(questionnaire_content)
+            unique_services = []
+            if costs:
+                unique_services = list(set([c["serviceName"] for c in costs]))
             update_current_step(project_id, "Cost Estimation - WBS", key="LoggingStatus")
             prompt_zero = (f"Return all the solution plays in a list in json, The key must be 'SolutionPlays' and in values keep a list like ['Solution PLay1', 'Solution Play2']"
                            f"Figure out Solution Plays from this filled Discovery Questionnaire Content{questionnaire_content}")
@@ -138,11 +141,11 @@ class WBSDocumentView(APIView):
             if user_remarks != "":
                 wbs_data = get_wbs_content(access_token, wbs_item_id)
                 prompt = CommonUtils.load_prompt_with_remarks(user_remarks, copilot_response,
-                                                              questionnaire_content, wbs_data)
+                                                              questionnaire_content, wbs_data, unique_services)
                 self.wbs_process(access_token, prompt, project_id, costs)
                 return Response("SUCCESS", status=200)
 
-            prompt = CommonUtils.load_prompt_without_remarks(questionnaire_content, copilot_response)
+            prompt = CommonUtils.load_prompt_without_remarks(questionnaire_content, copilot_response, unique_services)
             self.wbs_process(access_token, prompt, project_id, costs)
 
             return Response("SUCCESS", status=200)
