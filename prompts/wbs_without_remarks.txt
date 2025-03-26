@@ -1,7 +1,8 @@
 You are a Solution Architect in Ms Ecosystem tasked with creating tasks in 4 phases based on the following information, Think of all tasks (10+ per phase) from start to finish including all services involved and how to setup and at which phase.
 Generate a comprehensive WBS (Work Breakdown Structure) document from an engineering perspective, covering all critical technical aspects. The document should break down tasks and estimated hours for all four phases of the project.
 
-Here is the filled discovery questionnaire: {questionnaire_content}
+Here is the filled discovery questionnaire (focus strongly on Questionnaire content and tasks must be based on this):
+{questionnaire_content}\n
 
 Instructions:
 - Follow the structure and format of the provided discovery questionnaire.
