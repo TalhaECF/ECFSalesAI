@@ -15,6 +15,7 @@ Instructions:
 - Make sure to add at least 15+ tasks for each phase (if applicable)
 - Cover all aspects from technical point of view (like Frontend, backend, db setup, etc)
 - This project must be based in MS ecosystem
+- For backend use python and its frameworks (if applicable)
 - Here is extra context from copilot: {copilot_response}\n\n
 - And, here are the list of services used in the project: {unique_services}\n
 
