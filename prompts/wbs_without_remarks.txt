@@ -1,15 +1,25 @@
-Generate a comprehensive WBS (Work Breakdown Structure) document from an engineering perspective, covering all critical technical aspects. The document should break down tasks and estimated hours for all four phases of the migration project.
+You are a Solution Architect in Ms Ecosystem tasked with creating tasks in 4 phases based on the following information, Think of all tasks (10+ per phase) from start to finish including all services involved and how to setup and at which phase.
+Generate a comprehensive WBS (Work Breakdown Structure) document from an engineering perspective, covering all critical technical aspects. The document should break down tasks and estimated hours for all four phases of the project.
 
-Here is the filled discovery questionnaire: {questionnaire_content}
+Here is the filled discovery questionnaire (focus strongly on Questionnaire content and tasks must be based on this):
+{questionnaire_content}\n
 
 Instructions:
 - Follow the structure and format of the provided discovery questionnaire.
 - The WBS must be detailed and structured logically, ensuring no essential technical aspect is missed.
-- Focus on all key engineering areas, including infrastructure setup, security, authentication, integration, automation, DNS configuration, and compliance.
+- Focus on all key engineering areas, including infrastructure setup, security, authentication, integration, automation, and compliance.
 - Ensure an appropriate distribution of effort by breaking down tasks into granular sub-tasks, rather than grouping them into broad tasks with excessive hours.
 - List out each task explicitly, covering dependencies and sequential progress across the four phases.
 - The output should be purely content-based with no additional meta-information.
-- Here is extra context from copilot: {copilot_response}
+- Ensure that each phase has **well-defined tasks**, with **appropriate hours** (no limit on the hours and number of tasks) based on task complexity.
+- Each task must be detailed and granular, focusing on **one module or process at a time**.
+- Cover all aspects including **account migration, security policies, automation, compliance, testing, and post-migration support**.
+- Make sure to add at least 15+ tasks for each phase (if applicable)
+- Cover all aspects from technical point of view (like Frontend, backend, db setup, etc)
+- This project must be based in MS ecosystem
+- For backend use python and its frameworks (if applicable)
+- Here is extra context from copilot: {copilot_response}\n\n
+- And, here are the list of services used in the project: {unique_services}\n
 
 **Output Format:**
 - The response must be a valid JSON object structured as follows:
@@ -21,7 +31,7 @@ Instructions:
 - Example output format:
 {{
   "phase1": {{
-      "hours": [2, 3, 4, 3, 5],
+      "hours": [2, 10, 4, 3, 5],
       "tasks": [
           "Set up Azure AD in new tenant",
           "Configure initial authentication settings (SSO, MFA)",
@@ -31,7 +41,7 @@ Instructions:
       ]
   }},
   "phase2": {{
-      "hours": [4, 6, 5, 3, 2, 4],
+      "hours": [4, 6, 15, 3, 2, 4],
       "tasks": [
           "Migrate user accounts with permissions and roles",
           "Transfer and validate shared mailboxes",
@@ -42,7 +52,7 @@ Instructions:
       ]
   }},
   "phase3": {{
-      "hours": [5, 4, 3, 6, 2],
+      "hours": [5, 4, 3, 6, 10],
       "tasks": [
           "Migrate OneDrive files and user data",
           "Validate DNS replication and email functionality",
@@ -52,7 +62,7 @@ Instructions:
       ]
   }},
   "phase4": {{
-      "hours": [3, 2, 4, 5, 6],
+      "hours": [3, 2, 4, 15, 6],
       "tasks": [
           "Conduct post-migration testing and validation",
           "User training and onboarding",
@@ -62,8 +72,3 @@ Instructions:
       ]
   }}
 }}
-
-- Ensure that each phase has **well-defined tasks**, with **appropriate hours** (no limit on the hours and number of tasks) based on task complexity.
-- Each task must be detailed and granular, focusing on **one module or process at a time**.
-- Cover all aspects including **account migration, DNS settings, security policies, automation, compliance, testing, and post-migration support**.
-- Make sure to add at least 10+ tasks for each phase (if applicable)
