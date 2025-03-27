@@ -3,28 +3,23 @@ Generate a comprehensive WBS (Work Breakdown Structure) document from an enginee
 
 Here is the filled discovery questionnaire (focus strongly on Questionnaire content and tasks must be based on this):
 {questionnaire_content}\n
+
 Instructions:
-Follow the structure and format of the provided discovery questionnaire.
-Ensure the WBS is detailed, logically structured, and technically comprehensive.
-Cover all key engineering areas, including:
-Infrastructure setup (hosting, networking, security)
-Security & authentication (identity management, encryption)
-Integrations & automation (APIs, workflow automation)
-Compliance & testing (regulatory standards, quality checks)
-Account migration & post-migration support
-Break down tasks into granular sub-tasks rather than broad, high-effort tasks.
-List each task explicitly, covering dependencies and sequential progress across all phases.
-Each phase must have well-defined tasks, with effort allocated based on complexity (no strict limit on hours or task count).
-Ensure each task is detailed and modular, focusing on one component or process at a time.
-Address all technical aspects, including:
-Frontend (React, UI/UX considerations)
-Backend (Python & relevant frameworks)
-Database setup & management
-AI/ML-related tasks (if applicable)
-The project is built on the Microsoft ecosystem, so align all tasks accordingly.
-Reference additional contexts:
-Copilot insights: {copilot_response}
-List of services used in the project: {unique_services}
+- Follow the structure and format of the provided discovery questionnaire.
+- The WBS must be detailed and structured logically, ensuring no essential technical aspect is missed.
+- Focus on all key engineering areas, including infrastructure setup, security, authentication, integration, automation, and compliance.
+- Ensure an appropriate distribution of effort by breaking down tasks into granular sub-tasks, rather than grouping them into broad tasks with excessive hours.
+- List out each task explicitly, covering dependencies and sequential progress across the four phases.
+- The output should be purely content-based with no additional meta-information.
+- Ensure that each phase has **well-defined tasks**, with **appropriate hours** (no limit on the hours and number of tasks) based on task complexity.
+- Each task must be detailed and granular, focusing on **one module or process at a time**.
+- Cover all aspects including **account migration, security policies, automation, compliance, testing, and post-migration support**.
+- Make sure to add at least 15+ tasks for each phase (if applicable)
+- Cover all aspects from technical point of view (like Frontend, backend, db setup, etc)
+- This project must be based in MS ecosystem
+- For backend use python and its frameworks (if applicable)
+- Here is extra context from copilot: {copilot_response}\n\n
+- And, here are the list of services used in the project: {unique_services}\n
 
 **Output Format:**
 - The response must be a valid JSON object structured as follows:
