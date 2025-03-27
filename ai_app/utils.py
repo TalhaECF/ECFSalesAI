@@ -394,7 +394,8 @@ def get_discovery_questionnaire(access_token, project_id):
         return "No files found!", False
 
     download_url = get_file_down_url(access_token, items, project_id, delimiter="-")
-    file_content = get_file_content(access_token, download_url)
+    binary_content = get_file_content(access_token, download_url)
+    file_content = process_docx_content(binary_content)
     return file_content, True
 
 
