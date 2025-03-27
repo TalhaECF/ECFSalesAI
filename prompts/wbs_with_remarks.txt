@@ -6,25 +6,28 @@ Here is the filled discovery questionnaire (focus strongly on Questionnaire cont
 
 Current WBS Phases Tasks and hours Estimate: {wbs_content}\n
 
-
 Instructions:
-- Update WBS Document based on these user remarks (Critically important to follow): {user_remarks}
-- Follow the structure and format of the provided discovery questionnaire.
-- The WBS must be detailed and structured logically, ensuring no essential technical aspect is missed.
-- Focus on all key engineering areas, including infrastructure setup, security, authentication, integration, automation, and compliance.
-- Ensure an appropriate distribution of effort by breaking down tasks into granular sub-tasks, rather than grouping them into broad tasks with excessive hours.
-- List out each task explicitly, covering dependencies and sequential progress across the four phases.
-- The output should be purely content-based with no additional meta-information.
-- Ensure that each phase has **at least 15+ well-defined tasks**, with **balanced hours** based on task complexity.
-- Each task must be detailed and granular, focusing on **one module or process at a time**.
-- Cover all aspects including **account migration, security policies, automation, compliance, testing, and post-migration support**.
-- Make sure to add at least 15+ tasks for each phase (if applicable)
-- Cover all aspects from technical point of view (like Frontend, backend, db setup, etc)
-- This project must be based in MS ecosystem
-- For backend use python and its frameworks (if applicable)
-- Here is extra context from copilot: {copilot_response}\n\n
-- Here is extra context from copilot: {copilot_response}\n\n
-- And, here are the list of services used in the project: {unique_services}\n
+Update the WBS Document based on these user remarks (strictly follow): {user_remarks}
+Maintain the structure and format of the provided discovery questionnaire.
+Ensure a detailed and logically structured WBS, covering all essential technical aspects with a clear breakdown.
+Focus on AI, backend, frontend, and key engineering areas, including:
+Infrastructure setup (e.g., hosting, networking, security)
+Security & authentication (e.g., identity management, encryption)
+Integrations & automation (e.g., APIs, workflow automation)
+Compliance & testing (e.g., regulatory standards, quality checks)
+Account migration & post-migration support
+Break down tasks into granular sub-tasks instead of broad, high-effort tasks.
+Each phase must have at least 15+ well-defined tasks with effort balanced based on complexity.
+Ensure each task is detailed and modular, focusing on a specific component or process.
+The technical scope must include:
+Frontend (React, UI/UX considerations)
+Backend (Python & relevant frameworks)
+Database setup & management
+AI/ML-related tasks (if applicable)
+The project is built on the Microsoft ecosystem, so align all tasks accordingly.
+Reference these additional contexts:
+Copilot insights: {copilot_response}
+List of services used in the project: {unique_services}
 
 **Output Format:**
 - The response must be a valid JSON object structured as follows:
