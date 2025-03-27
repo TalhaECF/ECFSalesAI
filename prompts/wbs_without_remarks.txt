@@ -31,44 +31,45 @@ Instructions:
 - Example output format:
 {{
   "phase1": {{
-      "hours": [2, 10, 4, 3, 5],
+      "hours": [10, 8, 6, 12, 5, 4],
       "tasks": [
-          "Set up Azure AD in new tenant",
-          "Configure initial authentication settings (SSO, MFA)",
-          "Deploy base Microsoft 365 services",
-          "Verify email routing configuration",
-          "Establish baseline security policies"
+          "Set up SharePoint Lists and Libraries for project data storage",
+          "Configure Azure App Service for hosting the AI processing backend",
+          "Integrate OpenAI GPT and Copilot APIs for AI-driven document generation",
+          "Develop and deploy the Discovery Questionnaire generation module",
+          "Implement manual WBS generation trigger with storage in SharePoint",
+          "Test AI-generated questionnaire iterations and user feedback refinement"
       ]
   }},
   "phase2": {{
-      "hours": [4, 6, 15, 3, 2, 4],
+      "hours": [12, 10, 8, 14, 6, 5],
       "tasks": [
-          "Migrate user accounts with permissions and roles",
-          "Transfer and validate shared mailboxes",
-          "Configure Teams and SharePoint settings",
-          "Set up Power Automate workflows in the new tenant",
-          "Validate API and third-party integrations",
-          "Ensure compliance with HIPAA, GDPR"
+          "Develop and automate the WBS generation process using AI models",
+          "Integrate MS Cost Estimation API for financial insights in WBS",
+          "Enhance Power Automate workflows for document approvals and notifications",
+          "Implement refined AI-driven adjustments to WBS based on feedback",
+          "Validate AI model responses for project scoping accuracy",
+          "Ensure security measures for AI-generated documents in SharePoint"
       ]
   }},
   "phase3": {{
-      "hours": [5, 4, 3, 6, 10],
+      "hours": [14, 6, 10, 12, 5],
       "tasks": [
-          "Migrate OneDrive files and user data",
-          "Validate DNS replication and email functionality",
-          "Optimize security policies and conditional access",
-          "Perform load testing on the new environment",
-          "Run security audits to verify configurations"
+          "Develop and deploy automated SOW generation using structured templates",
+          "Configure Power Automate for multi-level approval workflows in SOW processing",
+          "Implement role-based access control (RBAC) for document security",
+          "Optimize AI-generated SOW formatting and content structure",
+          "Test and validate full AI-driven sales documentation workflow"
       ]
   }},
   "phase4": {{
-      "hours": [3, 2, 4, 15, 6],
+      "hours": [10, 6, 5, 8, 7],
       "tasks": [
-          "Conduct post-migration testing and validation",
-          "User training and onboarding",
-          "Monitor logs and troubleshoot performance issues",
-          "Backup strategy finalization and implementation",
-          "Optimize ongoing support and IT helpdesk readiness"
+          "Conduct full-system testing with real sales data and user validation",
+          "Optimize AI model fine-tuning based on user feedback and performance",
+          "Deploy monitoring and logging mechanisms for AI workflows",
+          "Provide end-user training and documentation for sales teams",
+          "Ensure post-deployment support and long-term maintenance strategy"
       ]
   }}
 }}
