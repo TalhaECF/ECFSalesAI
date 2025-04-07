@@ -70,7 +70,6 @@ def get_summaries_from_text(client, input_text):
 
     return final_summary
 
-
 class CommonUtils:
 
     def __init__(self, client):
