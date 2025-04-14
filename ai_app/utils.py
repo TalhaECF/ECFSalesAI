@@ -243,9 +243,11 @@ def pdf_to_images(pdf_path):
     images = None
     if os.name == "nt":
         # For windows
+        print('--- Windows ---')
         images = convert_from_path(pdf_path, poppler_path=r'C:\poppler\poppler-24.08.0\Library\bin')
     else:
         # For Linux
+        print('--- Linux ---')
         images = convert_from_path(pdf_path)
     return images
 
