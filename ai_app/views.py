@@ -258,7 +258,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
         access_token = get_access_token()
         project_id = request.data.get("project_id")
         item_id = request.data.get("item_id")
-        initial_form_content = get_initial_form_by_search(access_token, item_id)
+        initial_form_content = get_initial_form_by_search(access_token, item_id, client)
 
         taxonomy_json = ""
         message, file_path, success = taxonomy_processing(client, access_token)

@@ -3,6 +3,8 @@ import time
 import logging
 import requests
 import openai
+import base64
+from io import BytesIO
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
@@ -123,3 +125,32 @@ class CommonUtils:
                                                   copilot_response=copilot_response, unique_services=unique_services)
 
         return formatted_prompt
+
+    @staticmethod
+    @log_execution_time
+    def send_image_to_gpt(client, image, prompt):
+        # Convert image to base64
+        image_bytes = BytesIO()
+        image.save(image_bytes, format='PNG')
+        image_bytes.seek(0)
+        base64_image = base64.b64encode(image_bytes.read()).decode('utf-8')
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            max_tokens=10000,
+            messages=[
+                {"role": "system",
+                 "content": "You are an expert at extracting data from scanned MCQ and free-text questionnaires."},
+                {"role": "user", "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {
+                        "url": f"data:image/png;base64,{base64_image}",
+                        "detail": "high"
+                    }},
+                ]}
+            ],
+            # response_format={"type": "json_object"}
+        )
+
+        result = response.choices[0].message.content.strip()
+        return result

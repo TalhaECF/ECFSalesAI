@@ -8,8 +8,9 @@ from decouple import config
 from PyPDF2 import PdfReader
 from docx import Document
 import tempfile
-from .common import log_execution_time
-from openai import AzureOpenAI
+from .common import log_execution_time, CommonUtils
+import openai
+from pdf2image import convert_from_path
 
 
 def get_access_token():
@@ -221,6 +222,16 @@ def get_taxonomy_item_id(access_token, items):
                 return item_id, download_urls[ind]
     return -1, ""
 
+
+# def extract_text_from_pdf_content(pdf_content):
+#     with fitz.open(stream=pdf_content, filetype="pdf") as doc:
+#         text = ""
+#         for page in doc:
+#             text += page.get_text()
+#         return text
+
+
+
 def get_file_content(access_token, download_url):
     """Download the file content from the provided URL."""
     headers = {"Authorization": f"Bearer {access_token}"}
@@ -228,6 +239,70 @@ def get_file_content(access_token, download_url):
     response.raise_for_status()
     return response.content
 
+def pdf_to_images(pdf_path):
+    images = None
+    if os.name == "nt":
+        # For windows
+        images = convert_from_path(pdf_path, poppler_path=r'C:\poppler\poppler-24.08.0\Library\bin')
+    else:
+        # For Linux
+        images = convert_from_path(pdf_path)
+    return images
+
+def process_pdf_with_gpt(pdf_path, prompt, client):
+    from .common import CommonUtils
+    results = []
+    images = pdf_to_images(pdf_path)
+
+    for i, image in enumerate(images):
+        print(f"Processing page {i + 1}...")
+        result = CommonUtils.send_image_to_gpt(client, image, prompt)
+        results.append(result)
+
+    return "\n\n".join(results)
+
+def get_pdf_file_content(access_token, download_url, client):
+    """Download the file content from the provided URL."""
+    PARAMS = {
+        "la": "en",
+        "hash": "5EA2DA7D1492D105375580EEF2FB088F"
+    }
+
+    HEADERS = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_3_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
+        "Accept-Language": "en-GB,en;q=0.9,en-US;q=0.8,pt;q=0.7",
+        "Authorization": f"Bearer {access_token}"
+    }
+
+    CHUNK = 32 * 1024
+
+    with requests.get(download_url, headers=HEADERS, params=PARAMS, stream=True) as response:
+        response.raise_for_status()
+        with open("temp.pdf", "wb") as output:
+            for data in response.iter_content(CHUNK):
+                output.write(data)
+
+    prompt = """
+    Please analyze the scanned questionnaire page and extract every question along with its corresponding answer(s). For multiple-choice questions, note that there are two types:
+  • Radio button questions: Only one option is selected (indicated by a filled radio button).
+  • Tick box questions: One or more options may be selected (indicated by one or more ticked boxes).
+
+    Additionally, extract any free-text answers provided on the page.
+    
+    Format your output exactly as follows:
+    Q1: [Text of the question]
+    A1: [For radio buttons: the selected option; for tick boxes: a list of all selected options; include any associated free-text answer if present]
+    Q2: [Text of the question]
+    A2: [Answer(s)]
+    ... and so on.
+    
+    Ensure that your transcription accurately reflects all text from the page.
+    """
+
+    all_qna = process_pdf_with_gpt("temp.pdf", prompt, client)
+    os.remove("temp.pdf")
+
+    return all_qna
 
 def parse_pdf_content(file_content):
     """Parse the content of a PDF file."""
@@ -357,7 +432,7 @@ def get_file_down_url(access_token, items, project_id, delimiter):
     download_url = item_values[target_ind]["@microsoft.graph.downloadUrl"]
     return download_url
 
-def get_initial_form_by_search(access_token, item_id):
+def get_initial_form_by_search(access_token, item_id, client):
     init_form_drive=config("INITIAL_FORM_DRIVE")
     url = f"https://graph.microsoft.com/v1.0/drives/{init_form_drive}/items/{item_id}"
     headers = {"Authorization": f"Bearer {access_token}"}
@@ -366,10 +441,14 @@ def get_initial_form_by_search(access_token, item_id):
     download_url = response.get("@microsoft.graph.downloadUrl", None)
     if not download_url:
         raise "There was an issue while getting the Download URL from Sharepoint"
-    file_content_binary = get_file_content(access_token, download_url)
-    initial_form_content = process_docx_content(binary_content=file_content_binary)
+    file_content = get_pdf_file_content(access_token, download_url, client)
 
-    return initial_form_content
+    # For testing (check the initial form content by saving in a file locally)
+    with open('initial form text.txt', "w") as f:
+        f.write(file_content)
+        f.close()
+
+    return file_content
 
 def get_initial_form_content(access_token, project_id):
     time.sleep(5)

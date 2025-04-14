@@ -1,0 +1,30 @@
+Q1: Customer Name *
+A1: Talha Jaleel
+
+Q2: Engagement Type *
+A2: Project
+
+Q3: Service Category *
+A3: Azure
+
+Q1: Microsoft Azure
+A1: AI + machine learning, Analytics
+
+Q2: Estimated Engineering Hours *
+A2: 10
+
+Q1: Estimated Project Management Hours *
+A1: 10
+
+Q2: Resource Person Name *
+A2: Talha
+
+Q3: Submitted Date *
+A3: 4/14/2025
+
+Q4: Kindly explain the project details, requirements and expectations in detail *
+A4: The ECF Sales AI project aims to automate the pre-sales documentation process, starting from client intake via an Initial Form to generating outputs like Discovery Questionnaires, Work Breakdown Structures (WBS), and Statements of Work (SOW). Built on Microsoft Azure App Service with Power Apps for frontend, SharePoint for storage, and Power Automate for workflows, it also integrates advanced AI models from Azure AI Foundry and OpenAI to streamline document creation and review. 
+
+So far, the system supports project creation, intake of initial responses, and generation and revision of the Discovery Questionnaire. WBS generation has been scoped and partially implemented, while SOW and final deliverables like the Project Guide and As Built documentation are planned for later phases. These steps reuse utility methods for SharePoint handling and integrate AI services to produce high-quality, consistent outputs.
+
+The main requirements include processing structured data, automating document workflows, and ensuring secure, scalable operations. The expectation is to reduce manual effort, improve turnaround time, and bring consistency to pre-sales engineering outputs, forming a smart, AI-powered foundation for ECF's sales processes.
