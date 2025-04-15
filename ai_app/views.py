@@ -122,6 +122,7 @@ class WBSDocumentView(APIView):
 
             costs = self.cost_estimation(questionnaire_content)
             unique_services = []
+
             if costs:
                 unique_services = list(set([c["serviceName"] for c in costs]))
             update_current_step(project_id, "Cost Estimation - WBS", key="LoggingStatus")
