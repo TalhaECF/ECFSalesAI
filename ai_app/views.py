@@ -114,9 +114,11 @@ class WBSDocumentView(APIView):
         try:
 
             user_remarks = request.data.get("message")
+
             access_token = get_access_token()
             project_id = request.data.get("project_id")
             wbs_item_id = request.data.get("wbs_item_id", None)
+            print(f"user remarks: {user_remarks}, project idea: {project_id}, wbs item ID: {wbs_item_id}")
 
             questionnaire_content = get_discovery_questionnaire(access_token, project_id)
 
