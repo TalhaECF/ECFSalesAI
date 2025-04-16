@@ -443,7 +443,18 @@ def get_initial_form_by_search(access_token, item_id, client):
     download_url = response.get("@microsoft.graph.downloadUrl", None)
     if not download_url:
         raise "There was an issue while getting the Download URL from Sharepoint"
-    file_content = get_pdf_file_content(access_token, download_url, client)
+
+    # Retry mechanism
+    max_attempts = 2
+    for attempt in range(1, max_attempts + 1):
+        try:
+            file_content = get_pdf_file_content(access_token, download_url, client)
+            break  # Success, exit the loop
+        except Exception as e:
+            print(f"Attempt {attempt} failed: {e}")
+            if attempt == max_attempts:
+                raise  # Re-raise the exception if it's the last attempt
+            time.sleep(2 ** attempt)  # Exponential backoff: 2s, 4s, 8s...
 
     # For testing (check the initial form content by saving in a file locally)
     with open('initial form text.txt', "w") as f:
