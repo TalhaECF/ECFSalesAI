@@ -19,6 +19,7 @@ Instructions:
 - This project must be based in MS ecosystem
 - For backend use python and its frameworks (if applicable)
 - Here is extra context from copilot: {copilot_response}\n\n
+- Assess Environment, Design, Deploy and Manage are the titles of 4 phases
 - And, here are the list of services used in the project: {unique_services}\n
 
 **Output Format:**
