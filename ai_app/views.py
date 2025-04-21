@@ -117,6 +117,7 @@ class WBSDocumentView(APIView):
 
             access_token = get_access_token()
             project_id = request.data.get("project_id")
+
             wbs_item_id = request.data.get("wbs_item_id", None)
             print(f"user remarks: {user_remarks}, project idea: {project_id}, wbs item ID: {wbs_item_id}")
 
@@ -282,6 +283,8 @@ class DiscoveryQuestionnaireAPIView(APIView):
 
         try:
             # Read and parse documents
+            prompt = f"From this Initial Form content, give me all the information for client like name, email, project date and other relevant info, etc, {initial_form_content}"
+            client_n_project_info = CommonUtils.gpt_response(client, prompt)
             all_text, discovery_questionnaire_text = read_and_parse_documents(folder_path)
             prompt_zero = f"Return all the solution plays in a list in json, The key must be 'SolutionPlays' and in values keep a list like ['Solution Play1', 'Solution Play2'], find Solution Plays from here: {initial_form_content}"
             solution_plays_list = gpt_response_for_sp(client, prompt_zero)
@@ -359,6 +362,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
                 - Use clear numbering for each question and proper formatting for multiple-choice options (e.g., (1), (2), etc.).
                 - Ensure that the structure and format of the sample discovery questionnaire are followed precisely.
                 - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Docx format
+                 - Fill all the basic questions based on the info: {client_n_project_info}
                 - Add at least 20+ questions
                 """
 
