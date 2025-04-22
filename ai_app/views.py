@@ -364,9 +364,10 @@ class DiscoveryQuestionnaireAPIView(APIView):
                 - Use clear numbering for each question and proper formatting for multiple-choice options (e.g., (1), (2), etc.).
                 - Ensure that the structure and format of the sample discovery questionnaire are followed precisely.
                 - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Docx format
+                - Add the constraints, timeline, benefits and important aspects of the project too.
+                - Add at least 20+ questions
                 - Fill all the basic questions based on the info: {client_n_project_info}
                 - Here is the complete initial for response for better context: {initial_form_content}
-                - Add at least 20+ questions
                 """
 
             deployment_name_model = config("DEPLOYMENT_NAME")
