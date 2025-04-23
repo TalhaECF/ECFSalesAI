@@ -18,6 +18,7 @@ Instructions:
 - This project must be based in MS ecosystem
 - For backend use python and its frameworks (if applicable)
 - Based on the constraints, timeline and important aspects, adjust the number of tasks i.e. if time is not a constraint, make more tasks to cover all aspects, and for projects where time is a constraint, make less tasks and focus only core features
+- If time is not a constraint, add at least 10+ tasks per phase (if applicable)
 - Here is extra context from copilot: {copilot_response}\n\n
 - Assess Environment, Design, Deploy and Manage are the titles of 4 phases
 - And, here are the list of services used in the project: {unique_services}\n
