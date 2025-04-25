@@ -435,31 +435,51 @@ def get_file_down_url(access_token, items, project_id, delimiter):
     return download_url
 
 def get_initial_form_by_search(access_token, item_id, client):
+    is_pdf = False
+    is_docx = False
+
     init_form_drive=config("INITIAL_FORM_DRIVE")
     url = f"https://graph.microsoft.com/v1.0/drives/{init_form_drive}/items/{item_id}"
     headers = {"Authorization": f"Bearer {access_token}"}
     response = requests.get(url, headers=headers)
     response = response.json()
+
     download_url = response.get("@microsoft.graph.downloadUrl", None)
     if not download_url:
         raise "There was an issue while getting the Download URL from Sharepoint"
 
-    # Retry mechanism
-    max_attempts = 2
-    for attempt in range(1, max_attempts + 1):
-        try:
-            file_content = get_pdf_file_content(access_token, download_url, client)
-            break  # Success, exit the loop
-        except Exception as e:
-            print(f"Attempt {attempt} failed: {e}")
-            if attempt == max_attempts:
-                raise  # Re-raise the exception if it's the last attempt
-            time.sleep(2 ** attempt)  # Exponential backoff: 2s, 4s, 8s...
+    item_name = response.get("name", None)
 
-    # For testing (check the initial form content by saving in a file locally)
-    with open('initial form text.txt', "w") as f:
-        f.write(file_content)
-        f.close()
+    if ".pdf" in item_name:
+        is_pdf = True
+    elif ".docx" in item_name:
+        is_docx = True
+
+    file_content = ""
+
+    if is_pdf:
+        print("the Initial form is in PDF Format")
+        # Retry mechanism
+        max_attempts = 2
+        for attempt in range(1, max_attempts + 1):
+            try:
+                file_content = get_pdf_file_content(access_token, download_url, client)
+                break  # Success, exit the loop
+            except Exception as e:
+                print(f"Attempt {attempt} failed: {e}")
+                if attempt == max_attempts:
+                    raise  # Re-raise the exception if it's the last attempt
+                time.sleep(2 ** attempt)  # Exponential backoff: 2s, 4s, 8s...
+
+        # For testing (check the initial form content by saving in a file locally)
+        with open('initial form text.txt', "w") as f:
+            f.write(file_content)
+            f.close()
+
+    elif is_docx:
+        print("the Initial form is is DOCX Format")
+        binary_content = get_file_content(access_token, download_url)
+        file_content = process_docx_content(binary_content)
 
     return file_content
 
