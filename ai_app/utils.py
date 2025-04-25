@@ -11,7 +11,8 @@ import tempfile
 from .common import log_execution_time, CommonUtils
 import openai
 from pdf2image import convert_from_path
-
+import zipfile
+import xml.etree.ElementTree as ET
 
 def get_access_token():
     """
@@ -396,6 +397,66 @@ def taxonomy_processing(client, access_token):
 
 
 
+def extract_qna_from_docx(binary_content: bytes) -> dict:
+    """
+    Extracts questions and answers from a .docx file provided as binary content.
+
+    Args:
+        binary_content (bytes): The binary content of the .docx file.
+
+    Returns:
+        dict: A dictionary where each question (without "Q:") is a key and the answer (without "A:") is the value.
+    """
+    # Create a temporary .docx file
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.docx') as temp_file:
+        temp_filename = temp_file.name
+        temp_file.write(binary_content)
+
+    qa_dict = {}
+    WORD_NS = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
+
+    try:
+        # Open the docx file as a zip and extract XML
+        with zipfile.ZipFile(temp_filename) as docx_zip:
+            xml_content = docx_zip.read('word/document.xml')
+
+        root = ET.fromstring(xml_content)
+        paragraphs = root.findall('.//w:p', WORD_NS)
+
+        current_question = None
+        answer_lines = []
+
+        for para in paragraphs:
+            text = "".join(node.text for node in para.findall('.//w:t', WORD_NS) if node.text)
+            text = text.strip()
+
+            if text.startswith("Q:"):
+                if current_question is not None:
+                    full_answer = "\n".join(answer_lines).strip()
+                    qa_dict[current_question] = full_answer
+
+                current_question = text[len("Q:"):].strip()
+                answer_lines = []
+
+            elif text.startswith("A:"):
+                answer_text = text[len("A:"):].strip()
+                if current_question:
+                    answer_lines.append(answer_text)
+
+            else:
+                if current_question and text:
+                    answer_lines.append(text)
+
+        if current_question is not None:
+            full_answer = "\n".join(answer_lines).strip()
+            qa_dict[current_question] = full_answer
+
+    finally:
+        # Always delete the temp file
+        os.remove(temp_filename)
+
+    return qa_dict
+
 def process_docx_content(binary_content: bytes) -> str:
     # Create a temporary .docx file
     with tempfile.NamedTemporaryFile(delete=False, suffix='.docx') as temp_file:
@@ -479,7 +540,8 @@ def get_initial_form_by_search(access_token, item_id, client):
     elif is_docx:
         print("the Initial form is is DOCX Format")
         binary_content = get_file_content(access_token, download_url)
-        file_content = process_docx_content(binary_content)
+        # file_content = process_docx_content(binary_content)
+        file_content = str(extract_qna_from_docx(binary_content))
 
     return file_content
 

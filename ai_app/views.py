@@ -300,63 +300,13 @@ class DiscoveryQuestionnaireAPIView(APIView):
                 f.write(str(copilot_response))
                 f.close()
 
-            # if user_remarks != "":
-            #     questionnaire_content_binary, flag = get_discovery_questionnaire(access_token, project_id)
-            #     questionnaire_content = process_docx_content(questionnaire_content_binary)
-            #     print(questionnaire_content)
-            #
-            #     if flag:
-            #         user_remarks_prompt = f"""
-            #         Here is the discovery questionnaire content: {questionnaire_content}
-            #         Make changes to it based on these user remarks: {user_remarks}
-            #
-            #         Instructions:
-            #         - Here is the additional information for updating the discovery questionnaire based on user remarks: {all_text}
-            #         - Ensure that the structure and format of the provided discovery questionnaire are followed precisely.
-            #         - Write the output directly, do not add any meta content, add the content of discovery questionnaire ONLY
-            #         - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Doc format
-            #         - Keep the provided discovery questionnaire content and only updated based on user remarks
-            #         - Questions should be relevant to the Solution Play(s) mentioned here {solution_plays_list}
-            #         """
-            #
-            #         response = client.chat.completions.create(
-            #             model="gpt-4o-mini",
-            #             max_tokens=10000,
-            #             messages=[{"role": "user", "content": user_remarks_prompt}]
-            #         )
-            #         result = response.choices[0].message.content.strip()
-            #
-            #         new_doc = Document()
-            #
-            #         result = re.sub(r'\*', '', result)
-            #
-            #         # Add LLM-generated content to the new document
-            #         new_doc.add_paragraph(result, style='Normal')
-            #
-            #         # Save the generated questionnaire
-            #         output_file_path = folder_path / "Generated_Discovery_Questionnaire.docx"
-            #         new_doc.save(output_file_path)
-            #
-            #         # Upload to SharePoint
-            #         upload_questionnaire_to_sharepoint(output_file_path, project_id)
-            #         update_current_step(project_id, "Questionnaire Review")
-            #
-            #         # Remove the file after successful submission
-            #         os.remove(output_file_path)
-            #
-            #         return Response(
-            #             {
-            #                 "message": "Generated discovery questionnaire successfully."
-            #             },
-            #             status=status.HTTP_200_OK,
-            #         )
 
             prompt = f""""
                 Based on the following discovery questionnaire, generate a new discovery questionnaire tailored specifically for the Solution Play(s) mentioned in this list: {solution_plays_list}\n 
                 \n\nSample Discovery Questionnaire:\n{discovery_questionnaire_text}\n\n
                 For context, here is the Initial Form response with the transcript:\n\n {copilot_response} \n
                 Here is some more context which has solution plays: \n{taxonomy_json}\n
-                User Notes (must be followed): {user_remarks}\n
+                User Notes (must be followed if provided): {user_remarks}\n
 
                 Instructions:
                 - Make sure to complete the discovery questionnaire focusing exclusively on the Solution Play(s) mentioned in the Form Response and User Notes
