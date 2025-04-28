@@ -262,6 +262,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
         access_token = get_access_token()
         project_id = request.data.get("project_id")
         item_id = request.data.get("item_id")
+        project_name = get_project_name(access_token, project_id)
         initial_form_content = get_initial_form_by_search(access_token, item_id, client)
 
         taxonomy_json = ""
@@ -285,6 +286,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
             # Read and parse documents
             client_n_project_prompt = f"From this Initial Form content, give me all the information for client like name, email, project date and other relevant info, etc, {initial_form_content}"
             client_n_project_info = CommonUtils.gpt_response(client, client_n_project_prompt)
+            client_n_project_info = f"Project Name: {project_name}\n {client_n_project_prompt}"
 
 
             all_text, discovery_questionnaire_text = read_and_parse_documents(folder_path)
@@ -303,7 +305,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
 
             prompt = f""""
                 Based on the following discovery questionnaire, generate a new discovery questionnaire tailored specifically for the Solution Play(s) mentioned in this list: {solution_plays_list}\n 
-                \n\nSample Discovery Questionnaire:\n{discovery_questionnaire_text}\n\n
+                \n\nSample Discovery Questionnaire (this is just an example):\n{discovery_questionnaire_text}\n\n
                 For context, here is the Initial Form response with the transcript:\n\n {copilot_response} \n
                 Here is some more context which has solution plays: \n{taxonomy_json}\n
                 User Notes (must be followed if provided): {user_remarks}\n

@@ -404,6 +404,7 @@ def extract_qna_from_docx(binary_content: bytes) -> dict:
     Args:
         binary_content (bytes): The binary content of the .docx file.
 
+
     Returns:
         dict: A dictionary where each question (without "Q:") is a key and the answer (without "A:") is the value.
     """
@@ -585,3 +586,29 @@ def get_discovery_content(access_token, item_id):
     questionnaire_content = process_docx_content(binary_content=file_content_binary)
 
     return questionnaire_content
+
+
+def get_project_name(access_token, project_id):
+    try:
+        access_token = get_access_token()
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+
+        site_id = config("SITE_ID")
+        project_list_id = config("PROJECT_LIST")
+        url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/lists/{project_list_id}/items/{project_id}/fields"
+
+        # PATCH request to update CurrentStep
+        response = requests.get(url, headers=headers)
+        response_json = response.json()
+        project_name = response_json.get("Title")
+
+        if response.status_code != 200:
+            raise Exception(f"Failed to get Project List/{project_id} Info: {response.json()}")
+
+        return project_name
+
+    except Exception as e:
+        raise Exception(f"Error getting Info for Project-{project_id}: {str(e)}")
