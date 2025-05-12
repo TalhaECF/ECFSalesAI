@@ -10,6 +10,7 @@ from rest_framework import status
 
 from .cost_estimate_utils import get_azure_service_cost
 from .cost_estimation_json import get_service_app_records
+from .docx_processing import process_document
 from .utils import *
 from decouple import config
 import os
@@ -413,3 +414,29 @@ class SharePointFileParserView(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+class SowApiView(APIView):
+    http_method_names = ['post']
+
+    def post(self, request):
+        try:
+            project_id = request.data.get("project_id")
+            access_token = get_access_token()
+
+            input_file = "template.docx"
+            output_file = f"SOW_{project_id}.docx"
+            process_document(input_file, output_file, access_token, project_id)
+            print(f"Processed document saved as '{output_file}'.")
+
+            # Upload to SharePoint
+            upload_sow_to_sharepoint(output_file, project_id)
+            update_current_step(project_id, "SOW Review")
+
+            # Delete output SOW document after SP upload
+            os.remove(output_file)
+
+            return Response("Success", status=200)
+        except Exception as e:
+            return Response(f"Error: {str(e)}", status=500)

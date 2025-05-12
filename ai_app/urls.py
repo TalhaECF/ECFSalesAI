@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (UploadFileToSharePointView, OAuthRedirectView, WBSDocumentView,
                     InitialFormResponseView, DiscoveryQuestionnaireAPIView,
-                    PromptResponseAPIView, SharePointFileParserView)
+                    PromptResponseAPIView, SharePointFileParserView, SowApiView)
 
 urlpatterns = [
     path('upload-file/', UploadFileToSharePointView.as_view(), name='upload_file'),
@@ -11,4 +11,5 @@ urlpatterns = [
     path("new_discovery_questionnaire/", DiscoveryQuestionnaireAPIView.as_view(), name="discovery-questionnaire"),
     path('prompt_response/', PromptResponseAPIView.as_view(), name='co-pilot-action'),
     path('taxonomy_json/', SharePointFileParserView.as_view(), name='taxonomy-parser-json'),
+    path('sow/', SowApiView.as_view(), name='sow-generation')
 ]

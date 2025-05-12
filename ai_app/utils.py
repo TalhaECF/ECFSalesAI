@@ -201,6 +201,48 @@ def update_current_step(project_id, current_step, key="CurrentStep"):
         raise Exception(f"Error updating CurrentStep: {str(e)}")
 
 
+def upload_sow_to_sharepoint(file_path, project_id):
+    try:
+        access_token = get_access_token()
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+
+        site_id = config("SITE_ID")
+        sow_drive = config("DISCOVERY_DRIVE")
+        # Upload the file
+        upload_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{sow_drive}/root:/SOW-{project_id}.docx:/content"
+
+        with open(file_path, "rb") as file:
+            response = requests.put(upload_url, headers=headers, data=file)
+
+        if response.status_code not in [200, 201]:
+            raise Exception(f"Failed to upload file: {response.json()}")
+
+        # Extract the uploaded file's item ID
+        item_id = response.json().get("id")
+
+        # Get existing columns
+        columns_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{sow_drive}/items/{item_id}/listItem/fields"
+        fields_response = requests.get(columns_url, headers=headers)
+
+        if fields_response.status_code != 200:
+            raise Exception(f"Failed to fetch columns: {fields_response.json()}")
+
+        updated_project_id = {
+            "ProjectId":project_id
+        }
+
+        # Update the columns
+        update_response = requests.patch(columns_url, headers=headers, json=updated_project_id)
+
+        if update_response.status_code != 200:
+            raise Exception(f"Failed to update project_id: {update_response.json()}")
+
+    except Exception as e:
+        raise Exception(f"Error during SharePoint upload or update: {str(e)}")
+
 def get_sharepoint_items(access_token, drive_url):
     """Fetch items from the SharePoint drive URL."""
     headers = {"Authorization": f"Bearer {access_token}"}
