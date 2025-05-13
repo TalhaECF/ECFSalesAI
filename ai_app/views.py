@@ -423,11 +423,13 @@ class SowApiView(APIView):
     def post(self, request):
         try:
             project_id = request.data.get("project_id")
+            wbs_item_id = request.data.get("wbs_item_id")
+            # questionnaire_id = request.data.get("questionnaire_id")
             access_token = get_access_token()
 
             input_file = "template.docx"
             output_file = f"SOW_{project_id}.docx"
-            process_document(input_file, output_file, access_token, project_id)
+            process_document(input_file, output_file, access_token, project_id, wbs_item_id)
             print(f"Processed document saved as '{output_file}'.")
 
             # Upload to SharePoint

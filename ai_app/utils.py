@@ -210,7 +210,7 @@ def upload_sow_to_sharepoint(file_path, project_id):
         }
 
         site_id = config("SITE_ID")
-        sow_drive = config("DISCOVERY_DRIVE")
+        sow_drive = config("SOW_DRIVE")
         # Upload the file
         upload_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{sow_drive}/root:/SOW-{project_id}.docx:/content"
 
@@ -597,7 +597,7 @@ def get_initial_form_content(access_token, project_id):
     if len(items) == 0:
         return "No files found!", False
 
-    download_url = get_file_down_url(access_token, items, project_id)
+    download_url = get_file_down_url(access_token, items, project_id, delimiter="_")
     file_content = get_file_content(access_token, download_url)
     return file_content, True
 
