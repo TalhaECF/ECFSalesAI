@@ -1,4 +1,5 @@
 import re
+import os
 from docx import Document
 from lxml import etree
 from typing import Dict, List
@@ -7,7 +8,7 @@ from decouple import config
 from openai import AzureOpenAI
 
 from .common import CommonUtils
-from .utils import get_initial_form_content,get_discovery_questionnaire
+from .utils import get_initial_form_by_search, get_discovery_questionnaire
 from .wbs_utils import get_wbs_content
 
 # Initialize OpenAI client
@@ -98,17 +99,21 @@ def replace_placeholders_in_content_controls(doc: Document, replacements: Dict[s
             process_element_tree(header._element)
 
 
-def generate_openai_response(placeholders, access_token, project_id, wbs_item_id):
+def generate_openai_response(placeholders, access_token, project_id, initial_form_item_id, wbs_item_id):
     """
     Generate dummy values for each placeholder.
     For example, ${NAME} -> Dummy_NAME
     """
-    initial_form_response = get_initial_form_content(access_token, project_id)
+    initial_form_response = get_initial_form_by_search(access_token, initial_form_item_id, client)
     questionnaire_content = get_discovery_questionnaire(access_token, project_id)
     copilot_response = None
-    # with open("..copilot_response.txt", "r") as f:
-    #     copilot_response = f.read()
-    #     f.close()
+
+    file_path = os.path.join(os.path.dirname(__file__), '..', 'copilot_response.txt')
+    file_path = os.path.abspath(file_path)
+
+    with open(file_path, "r") as f:
+        copilot_response = f.read()
+        f.close()
 
     wbs_phases_content = get_wbs_content(access_token, wbs_item_id)
 
@@ -126,7 +131,7 @@ def generate_openai_response(placeholders, access_token, project_id, wbs_item_id
     return response_dict
 
 
-def process_document(input_path, output_path, access_token, project_id, wbs_item_id):
+def process_document(input_path, output_path, access_token, project_id, initial_form_item_id, wbs_item_id):
     """
     Process the document: load, extract placeholders, generate dummy values,
     replace placeholders, and save the new document.
@@ -134,7 +139,7 @@ def process_document(input_path, output_path, access_token, project_id, wbs_item
     doc = load_document(input_path)
     texts = extract_content_control_texts(doc)
     placeholders = extract_placeholders(texts)
-    replacements = generate_openai_response(placeholders, access_token, project_id, wbs_item_id)
+    replacements = generate_openai_response(placeholders, access_token, project_id, initial_form_item_id, wbs_item_id)
     # replacements = {placeholder: f"{placeholder}_dummy" for placeholder in placeholders}
     print(f"Here are the placeholders (key and values): {replacements}")
     replace_placeholders_in_content_controls(doc, replacements)
