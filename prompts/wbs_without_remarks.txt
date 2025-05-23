@@ -33,7 +33,7 @@ Instructions:
 - Example output format:
 {{
   "phase1": {{
-      "hours": [10, 8, 6, 12, 5, 4],
+      "hours": [2, 1, 2, 1.5, 1.5, 2],
       "tasks": [
           "Set up SharePoint Lists and Libraries for project data storage",
           "Configure Azure App Service for hosting the AI processing backend",
@@ -44,7 +44,7 @@ Instructions:
       ]
   }},
   "phase2": {{
-      "hours": [12, 10, 8, 14, 6, 5],
+      "hours": [1, 2, 2, 2, 3, 2],
       "tasks": [
           "Develop and automate the WBS generation process using AI models",
           "Integrate MS Cost Estimation API for financial insights in WBS",
@@ -55,7 +55,7 @@ Instructions:
       ]
   }},
   "phase3": {{
-      "hours": [14, 6, 10, 12, 5],
+      "hours": [2, 3, 2, 4, 1.5],
       "tasks": [
           "Develop and deploy automated SOW generation using structured templates",
           "Configure Power Automate for multi-level approval workflows in SOW processing",
@@ -65,7 +65,7 @@ Instructions:
       ]
   }},
   "phase4": {{
-      "hours": [10, 6, 5, 8, 7],
+      "hours": [2, 1, 1.5, 2, 3],
       "tasks": [
           "Conduct full-system testing with real sales data and user validation",
           "Optimize AI model fine-tuning based on user feedback and performance",
