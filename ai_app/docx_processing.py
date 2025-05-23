@@ -48,17 +48,45 @@ def extract_content_control_texts(doc: Document) -> List[str]:
         texts.append(text)
     return texts
 
+
+# def extract_placeholders(texts: List[str]) -> List[str]:
+#     """
+#     Extract all unique placeholders in the format [PLACEHOLDER] from a list of texts.
+#     """
+#     pattern = re.compile(r'\[([^\[\]]+)\]')
+#     placeholders = set()
+#     for text in texts:
+#         matches = pattern.findall(text)
+#         for match in matches:
+#             placeholders.add(match.strip())
+#     return list(placeholders)
+
 def extract_placeholders(texts: List[str]) -> List[str]:
     """
-    Extract all unique placeholders in the format [PLACEHOLDER] from a list of texts.
+    Extract both bracketed [PLACEHOLDER] and unbracketed Placeholder values
+    from content control text blocks.
     """
-    pattern = re.compile(r'\[([^\[\]]+)\]')
+    bracket_pattern = re.compile(r'\[([^\[\]]+)\]')
+    plain_pattern = re.compile(r'\b([A-Z][a-zA-Z]+(?:\s[A-Z][a-zA-Z]+)*)\b')
+
     placeholders = set()
+
     for text in texts:
-        matches = pattern.findall(text)
-        for match in matches:
-            placeholders.add(match.strip())
+        # Bracketed placeholders
+        bracket_matches = bracket_pattern.findall(text)
+        placeholders.update(match.strip() for match in bracket_matches)
+
+        # Plain title-case placeholders (e.g. Service Owner)
+        plain_matches = plain_pattern.findall(text)
+        for match in plain_matches:
+            # Ignore common English words or already bracketed ones
+            if match not in placeholders and not re.search(r'\[.*' + re.escape(match) + r'.*\]', text):
+                placeholders.add(match.strip())
+
     return list(placeholders)
+
+
+
 
 
 def generate_placeholder_dict(placeholders: List[str]) -> Dict[str, str]:
@@ -125,6 +153,9 @@ def generate_openai_response(placeholders, access_token, project_id, initial_for
         Filled Discovery Questionnaire: {questionnaire_content}\n
         Copilot Response: {copilot_response}\n
         WBS 4 Phases Content: {str(wbs_phases_content)}
+        
+        Instructions:
+        - For Workload, only add add 2 phrase word
     """
     response_dict = eval(CommonUtils.gpt_response_json(client, prompt))
     response_dict = {key: str(val) for key,val in response_dict.items()}
