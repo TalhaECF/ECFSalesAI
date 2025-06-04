@@ -368,8 +368,8 @@ def send_to_gpt(client, parsed_content):
         f"Make sure to add all Solution Plays from the content into Json keys"
     )
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        max_tokens=2000,
+        model="o1",
+        # max_tokens=2000,
         response_format={"type": "json_object"},
         messages=[{"role": "user", "content": prompt}]
     )
@@ -379,8 +379,8 @@ def send_to_gpt(client, parsed_content):
 def gpt_response_for_sp(client, prompt):
     deployment_name_model = config("DEPLOYMENT_NAME")
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        max_tokens=350,
+        model="o1",
+        # max_tokens=350,
         response_format={"type": "json_object"},
         messages=[{"role": "user", "content": prompt}],
     )

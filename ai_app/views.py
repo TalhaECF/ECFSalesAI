@@ -325,8 +325,8 @@ class DiscoveryQuestionnaireAPIView(APIView):
 
             deployment_name_model = config("DEPLOYMENT_NAME")
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                max_tokens=10000,
+                model="o1",
+                # max_tokens=10000,
                 messages=[{"role": "user", "content": prompt}]
             )
             result = response.choices[0].message.content.strip()

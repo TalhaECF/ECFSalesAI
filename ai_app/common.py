@@ -22,8 +22,8 @@ def log_execution_time(func):
 
 def gpt_response(client, prompt):
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        max_tokens=10000,
+        model="o1",
+        # max_tokens=10000,
         messages=[{"role": "user", "content": prompt}]
     )
     result = response.choices[0].message.content.strip()
@@ -80,8 +80,8 @@ class CommonUtils:
     @staticmethod
     def gpt_response(client, prompt):
         response =client.chat.completions.create(
-            model="gpt-4o-mini",
-            max_tokens=10000,
+            model="o1",
+            # max_tokens=10000,
             messages=[{"role": "user", "content": prompt}]
         )
         result = response.choices[0].message.content.strip()
@@ -91,8 +91,8 @@ class CommonUtils:
     @log_execution_time
     def gpt_response_json(client, prompt):
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            max_tokens=10000,
+            model="o1",
+            # max_tokens=10000,
             messages=[{"role": "user", "content": prompt}],
             response_format = {"type": "json_object"}
         )
@@ -136,8 +136,8 @@ class CommonUtils:
         base64_image = base64.b64encode(image_bytes.read()).decode('utf-8')
 
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            max_tokens=10000,
+            model="o1",
+            # max_tokens=10000,
             messages=[
                 {"role": "system",
                  "content": "You are an expert at extracting data from scanned MCQ and free-text questionnaires."},

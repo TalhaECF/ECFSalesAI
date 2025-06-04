@@ -27,25 +27,49 @@ def load_document(path: str) -> Document:
     except Exception as e:
         raise FileNotFoundError(f"Unable to load document: {e}")
 
+# def extract_content_control_texts(doc: Document) -> List[str]:
+#     """
+#     Extract text from all content controls (Structured Document Tags) in the document.
+#     """
+#     root = doc._element  # lxml element for <w:document>
+#     ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
+#
+#     # Convert the root to an ElementTree
+#     tree = etree.ElementTree(root)
+#
+#     # Find all content control elements in the document
+#     sdt_elements = tree.xpath('.//w:sdt', namespaces=ns)
+#
+#     texts = []
+#     for sdt in sdt_elements:
+#         # Extract inner text content (if any text nodes exist in the content)
+#         content_elem = sdt.find('.//w:sdtContent', namespaces=ns)
+#         text = "".join(content_elem.itertext()) if content_elem is not None else ""
+#         texts.append(text)
+#     return texts
+
+
 def extract_content_control_texts(doc: Document) -> List[str]:
     """
-    Extract text from all content controls (Structured Document Tags) in the document.
+    Extract text from all content controls (Structured Document Tags) in the document,
+    while avoiding duplicated segments.
     """
-    root = doc._element  # lxml element for <w:document>
+    root = doc._element
     ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
 
-    # Convert the root to an ElementTree
     tree = etree.ElementTree(root)
-
-    # Find all content control elements in the document
     sdt_elements = tree.xpath('.//w:sdt', namespaces=ns)
 
     texts = []
     for sdt in sdt_elements:
-        # Extract inner text content (if any text nodes exist in the content)
         content_elem = sdt.find('.//w:sdtContent', namespaces=ns)
-        text = "".join(content_elem.itertext()) if content_elem is not None else ""
-        texts.append(text)
+        if content_elem is not None:
+            text_runs = [
+                t.text for t in content_elem.iter()
+                if t.tag.endswith('}t') and t.text
+            ]
+            text = "".join(text_runs)
+            texts.append(text)
     return texts
 
 
@@ -208,13 +232,14 @@ def generate_openai_response(placeholders, access_token, project_id, initial_for
             Please return a single JSON object where each key is a placeholder from the list above,
             and its value is the appropriate information retrieved from the context below.
 
-            IMPORTANT INSTRUCTIONS FOR VALUES:  
+            IMPORTANT INSTRUCTIONS FOR VALUES:
             - The values in the JSON object should be the direct plain text for insertion into the document.
             - Do NOT include any square brackets (e.g., '[Value]') or other placeholder markup in the *values* themselves, 
-              UNLESS such brackets are an intrinsic part of the actual data (e.g., a product code like '[XYZ-001]' or a list like '[Option A, Option B]').
             - If a suitable value cannot be found for a placeholder, keep the value same as key (Do not add any other value).
-            - Ensure values are concise (e.g., up to 3-5 words for names/titles) unless the placeholder implies longer text.
-            - Never add N/A or None
+            - Ensure values are concise (e.g., up to 3-5 words) unless the placeholder implies longer text.
+            - Never add N/A, None or Not specified
+            - Make sure to fill all 4 phases tasks/hrs in the WBS 4 phases placeholders
+            
 
             Context:
             1. Initial Form Response: {initial_form_response}
@@ -242,6 +267,7 @@ def process_document(input_path, output_path, access_token, project_id, initial_
     replacements = generate_openai_response(placeholders, access_token, project_id, initial_form_item_id, wbs_item_id)
     # replacements = {placeholder: f"{placeholder}_dummy" for placeholder in placeholders}
     print(f"Here are the placeholders (key and values): {replacements}")
+    # temporarily removing Date
     replace_placeholders_in_content_controls(doc, replacements)
     doc.save(output_path)
 
