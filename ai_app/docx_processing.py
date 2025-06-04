@@ -95,9 +95,51 @@ def generate_placeholder_dict(placeholders: List[str]) -> Dict[str, str]:
     """
     return {placeholder: "" for placeholder in placeholders}
 
+
+# def replace_placeholders_in_content_controls(doc: Document, replacements: Dict[str, str]) -> None:
+#     """
+#     Replace both [Bracketed] and Plain placeholders in all content controls
+#     with values from the `replacements` dictionary.
+#     The final result does NOT retain any square brackets.
+#     """
+#     def process_element_tree(root_element):
+#         ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
+#         tree = etree.ElementTree(root_element)
+#         sdt_elements = tree.xpath('.//w:sdt', namespaces=ns)
+#
+#         for sdt in sdt_elements:
+#             content_elem = sdt.find('.//w:sdtContent', namespaces=ns)
+#             if content_elem is not None:
+#                 for elem in content_elem.iter():
+#                     if elem.tag == '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t':
+#                         original_text = elem.text
+#                         if original_text:
+#                             new_text = original_text
+#                             for key, val in replacements.items():
+#                                 # Replace [Placeholder] with value
+#                                 bracketed = f"[{key}]"
+#                                 if bracketed in new_text:
+#                                     new_text = new_text.replace(bracketed, val)
+#
+#                                 # Replace plain Placeholder with value (only as whole word)
+#                                 pattern = rf'\b{re.escape(key)}\b'
+#                                 new_text = re.sub(pattern, val, new_text)
+#
+#                             elem.text = new_text
+#
+#     # Replace in main document body
+#     process_element_tree(doc._element)
+#
+#     # Replace in headers
+#     for section in doc.sections:
+#         header = section.header
+#         if header is not None:
+#             process_element_tree(header._element)
+
+
 def replace_placeholders_in_content_controls(doc: Document, replacements: Dict[str, str]) -> None:
     """
-    Replace placeholders in all content controls (including headers) with dummy values.
+    Replace [Placeholders] and plain placeholders with actual values (no brackets retained).
     """
     def process_element_tree(root_element):
         ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
@@ -109,22 +151,24 @@ def replace_placeholders_in_content_controls(doc: Document, replacements: Dict[s
             if content_elem is not None:
                 for elem in content_elem.iter():
                     if elem.tag == '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t':
-                        text = elem.text
-                        if text:
+                        original_text = elem.text
+                        if original_text:
+                            new_text = original_text
                             for key, val in replacements.items():
-                                placeholder = f'[{key}]'
-                                if placeholder in text:
-                                    text = text.replace(placeholder, val)
-                            elem.text = text
+                                new_text = new_text.replace(f"[{key}]", val)
+                                new_text = re.sub(rf'\b{re.escape(key)}\b', val, new_text)
 
-    # Process main document body
+                            # Remove surrounding brackets *after* all replacements
+                            if new_text.startswith("[") and new_text.endswith("]") and len(new_text) > 2:
+                                new_text = new_text[1:-1].strip()
+
+                            elem.text = new_text
+
     process_element_tree(doc._element)
 
-    # Process headers
     for section in doc.sections:
-        header = section.header
-        if header is not None:
-            process_element_tree(header._element)
+        if section.header:
+            process_element_tree(section.header._element)
 
 
 def generate_openai_response(placeholders, access_token, project_id, initial_form_item_id, wbs_item_id):
@@ -145,18 +189,42 @@ def generate_openai_response(placeholders, access_token, project_id, initial_for
 
     wbs_phases_content = get_wbs_content(access_token, wbs_item_id)
 
+    # prompt = f"""
+    #     Here is a list of placeholders/keys: {placeholders}\n
+    #     Return a JSON with these placeholders as keys and fill in the appropriate values using the context below:
+    #
+    #     Initial Form Response: {initial_form_response}\n
+    #     Filled Discovery Questionnaire: {questionnaire_content}\n
+    #     Copilot Response: {copilot_response}\n
+    #     WBS 4 Phases Content: {str(wbs_phases_content)}
+    #
+    #     Instructions:
+    #     - Do not add lengthy names, keep it upto 3 words at max (if applicable)
+    # """
+
     prompt = f"""
-        Here is a list of placeholders/keys: {placeholders}\n
-        Return a JSON with these placeholders as keys and fill in the appropriate values using the context below:
-        
-        Initial Form Response: {initial_form_response}\n
-        Filled Discovery Questionnaire: {questionnaire_content}\n
-        Copilot Response: {copilot_response}\n
-        WBS 4 Phases Content: {str(wbs_phases_content)}
-        
-        Instructions:
-        - For Workload, only add add 2 phrase word
-    """
+            Here is a list of placeholders/keys: {placeholders}
+
+            Please return a single JSON object where each key is a placeholder from the list above,
+            and its value is the appropriate information retrieved from the context below.
+
+            IMPORTANT INSTRUCTIONS FOR VALUES:  
+            - The values in the JSON object should be the direct plain text for insertion into the document.
+            - Do NOT include any square brackets (e.g., '[Value]') or other placeholder markup in the *values* themselves, 
+              UNLESS such brackets are an intrinsic part of the actual data (e.g., a product code like '[XYZ-001]' or a list like '[Option A, Option B]').
+            - If a suitable value cannot be found for a placeholder, keep the value same as key (Do not add any other value).
+            - Ensure values are concise (e.g., up to 3-5 words for names/titles) unless the placeholder implies longer text.
+            - Never add N/A or None
+
+            Context:
+            1. Initial Form Response: {initial_form_response}
+            2. Filled Discovery Questionnaire: {questionnaire_content}
+            3. Copilot Response (User query/interaction summary): {copilot_response}
+            4. WBS (Work Breakdown Structure) 4 Phases Content: {wbs_phases_content}
+
+            Example of desired JSON output: {{"Placeholder1": "Actual Value 1", "Placeholder2": "More Info Here"}}
+        """
+
     response_dict = eval(CommonUtils.gpt_response_json(client, prompt))
     response_dict = {key: str(val) for key,val in response_dict.items()}
     return response_dict
@@ -170,6 +238,7 @@ def process_document(input_path, output_path, access_token, project_id, initial_
     doc = load_document(input_path)
     texts = extract_content_control_texts(doc)
     placeholders = extract_placeholders(texts)
+    # placeholders.append("Company Web")
     replacements = generate_openai_response(placeholders, access_token, project_id, initial_form_item_id, wbs_item_id)
     # replacements = {placeholder: f"{placeholder}_dummy" for placeholder in placeholders}
     print(f"Here are the placeholders (key and values): {replacements}")
