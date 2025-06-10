@@ -165,10 +165,11 @@ def replace_placeholders_in_content_controls(doc: Document, replacements: Dict[s
     """
     Replace [Placeholders] and plain placeholders with actual values (no brackets retained).
     """
-    def process_element_tree(root_element):
+    def process_element_tree(root_element, ignore_date = False):
         ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
         tree = etree.ElementTree(root_element)
         sdt_elements = tree.xpath('.//w:sdt', namespaces=ns)
+
 
         for sdt in sdt_elements:
             content_elem = sdt.find('.//w:sdtContent', namespaces=ns)
@@ -179,6 +180,8 @@ def replace_placeholders_in_content_controls(doc: Document, replacements: Dict[s
                         if original_text:
                             new_text = original_text
                             for key, val in replacements.items():
+                                if 'Date' in key and ignore_date:
+                                    continue
                                 new_text = new_text.replace(f"[{key}]", val)
                                 new_text = re.sub(rf'\b{re.escape(key)}\b', val, new_text)
 
@@ -188,11 +191,11 @@ def replace_placeholders_in_content_controls(doc: Document, replacements: Dict[s
 
                             elem.text = new_text
 
-    process_element_tree(doc._element)
+    process_element_tree(doc._element, ignore_date=True)
 
     for section in doc.sections:
         if section.header:
-            process_element_tree(section.header._element)
+            process_element_tree(section.header._element, ignore_date=True)
 
 
 def generate_openai_response(placeholders, access_token, project_id, initial_form_item_id, wbs_item_id):
@@ -268,7 +271,6 @@ def process_document(input_path, output_path, access_token, project_id, initial_
     replacements = generate_openai_response(placeholders, access_token, project_id, initial_form_item_id, wbs_item_id)
     # replacements = {placeholder: f"{placeholder}_dummy" for placeholder in placeholders}
     print(f"Here are the placeholders (key and values): {replacements}")
-    # temporarily removing Date
     replace_placeholders_in_content_controls(doc, replacements)
     doc.save(output_path)
 
