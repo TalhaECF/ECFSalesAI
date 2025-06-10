@@ -239,6 +239,7 @@ def generate_openai_response(placeholders, access_token, project_id, initial_for
             - Ensure values are concise (e.g., up to 3-5 words) unless the placeholder implies longer text.
             - Never add N/A, None or Not specified
             - Make sure to fill all 4 phases tasks/hrs in the WBS 4 phases placeholders
+            - Each task must have the hours after it like Task text ( X hours)
             
 
             Context:
