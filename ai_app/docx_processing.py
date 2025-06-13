@@ -180,8 +180,8 @@ def replace_placeholders_in_content_controls(doc: Document, replacements: Dict[s
                         if original_text:
                             new_text = original_text
                             for key, val in replacements.items():
-                                if 'Date' in key and ignore_date:
-                                    continue
+                                # if 'Date' in key and ignore_date:
+                                #     continue
                                 new_text = new_text.replace(f"[{key}]", val)
                                 new_text = re.sub(rf'\b{re.escape(key)}\b', val, new_text)
 
@@ -195,7 +195,7 @@ def replace_placeholders_in_content_controls(doc: Document, replacements: Dict[s
 
     for section in doc.sections:
         if section.header:
-            process_element_tree(section.header._element, ignore_date=True)
+            process_element_tree(section.header._element, ignore_date=False)
 
 
 def generate_openai_response(placeholders, access_token, project_id, initial_form_item_id, wbs_item_id):
@@ -242,7 +242,7 @@ def generate_openai_response(placeholders, access_token, project_id, initial_for
             - Ensure values are concise (e.g., up to 3-5 words) unless the placeholder implies longer text.
             - Never add N/A, None or Not specified
             - Make sure to fill all 4 phases tasks/hrs in the WBS 4 phases placeholders
-            - Each task must have the hours after it like Task text ( X hours)
+            - Each task must have the hours after it like Task text ( X hours) and add newline char '\n' at end of each task
             
 
             Context:

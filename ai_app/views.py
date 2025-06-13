@@ -325,7 +325,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
 
             deployment_name_model = config("DEPLOYMENT_NAME")
             response = client.chat.completions.create(
-                model="o1",
+                model=config("MODEL_NAME"),
                 # max_tokens=10000,
                 messages=[{"role": "user", "content": prompt}]
             )
