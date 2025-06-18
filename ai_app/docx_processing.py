@@ -161,34 +161,89 @@ def generate_placeholder_dict(placeholders: List[str]) -> Dict[str, str]:
 #             process_element_tree(header._element)
 
 
+def replace_wbs_placeholders_in_paragraphs(doc: Document, replacements: Dict[str, str]) -> None:
+    """
+    Replace WBS_PhaseX placeholders written as plain text like <<WBS_Phase1>> in paragraphs
+    with formatted bullet points.
+    """
+    wbs_keys = [f"WBS_Phase{i}" for i in range(1, 5)]
+
+    for para in doc.paragraphs:
+        for key in wbs_keys:
+            token = f"<<{key}>>"
+            if token in para.text and key in replacements and replacements[key].strip():
+                # Remove original run contents
+                for run in para.runs:
+                    if token in run.text:
+                        run.clear()
+
+                # Insert formatted lines as bullet points
+                para.clear()
+                for line in replacements[key].split('\n'):
+                    if line.strip():
+                        new_run = para.add_run(f"• {line.strip()}")
+                        # new_run.font.color.rgb = (91, 155, 213)  # RGB for color val='5B9BD5'
+                        para.add_run("\n")  # ensure line breaks
+
+
 def replace_placeholders_in_content_controls(doc: Document, replacements: Dict[str, str]) -> None:
     """
     Replace [Placeholders] and plain placeholders with actual values (no brackets retained).
+    WBS-prefixed keys get bullet-point formatting with dark gray, accent 6 color.
     """
-    def process_element_tree(root_element, ignore_date = False):
+    def process_element_tree(root_element, ignore_date=False):
         ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
         tree = etree.ElementTree(root_element)
         sdt_elements = tree.xpath('.//w:sdt', namespaces=ns)
 
-
         for sdt in sdt_elements:
             content_elem = sdt.find('.//w:sdtContent', namespaces=ns)
             if content_elem is not None:
-                for elem in content_elem.iter():
+                for elem in list(content_elem.iter()):
                     if elem.tag == '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t':
                         original_text = elem.text
-                        if original_text:
-                            new_text = original_text
-                            for key, val in replacements.items():
-                                # if 'Date' in key and ignore_date:
-                                #     continue
-                                new_text = new_text.replace(f"[{key}]", val)
-                                new_text = re.sub(rf'\b{re.escape(key)}\b', val, new_text)
+                        if not original_text:
+                            continue
 
-                            # Remove surrounding brackets *after* all replacements
+                        new_text = original_text
+                        applied_replacement = False
+
+                        for key, val in replacements.items():
+                            bracketed = f"[{key}]"
+                            if bracketed in new_text or re.search(rf'\b{re.escape(key)}\b', new_text):
+
+                                if key.startswith("WBS") and val.strip():
+                                    parent = elem.getparent()
+                                    if parent is not None:
+                                        parent.remove(elem)
+
+                                        for line in val.split("\n"):
+                                            if line.strip():
+                                                # Create <w:r> run
+                                                new_r = etree.Element('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}r')
+
+                                                # Add formatting <w:rPr>
+                                                rpr = etree.Element('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}rPr')
+                                                color = etree.Element('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}color')
+                                                color.set('val', '5B9BD5')  # Dark Gray, Accent 6
+                                                rpr.append(color)
+                                                new_r.append(rpr)
+
+                                                # Text element
+                                                new_t = etree.Element('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t')
+                                                new_t.text = f"• {line.strip()}"
+                                                new_r.append(new_t)
+                                                parent.append(new_r)
+                                        applied_replacement = True
+                                        break
+
+                                else:
+                                    new_text = new_text.replace(bracketed, val)
+                                    new_text = re.sub(rf'\b{re.escape(key)}\b', val, new_text)
+
+                        if not applied_replacement:
                             if new_text.startswith("[") and new_text.endswith("]") and len(new_text) > 2:
                                 new_text = new_text[1:-1].strip()
-
                             elem.text = new_text
 
     process_element_tree(doc._element, ignore_date=True)
@@ -260,19 +315,28 @@ def generate_openai_response(placeholders, access_token, project_id, initial_for
 
 
 def process_document(input_path, output_path, access_token, project_id, initial_form_item_id, wbs_item_id):
-    """
-    Process the document: load, extract placeholders, generate dummy values,
-    replace placeholders, and save the new document.
-    """
     doc = load_document(input_path)
     texts = extract_content_control_texts(doc)
     placeholders = extract_placeholders(texts)
-    # placeholders.append("Company Web")
+
+    # Append plain WBS text placeholders (if user writes <<WBS_Phase1>>)
+    placeholders.extend([f"WBS_Phase{i}" for i in range(1, 5)])
+
+    # Remove duplicates
+    placeholders = list(set(placeholders))
+
     replacements = generate_openai_response(placeholders, access_token, project_id, initial_form_item_id, wbs_item_id)
-    # replacements = {placeholder: f"{placeholder}_dummy" for placeholder in placeholders}
+
     print(f"Here are the placeholders (key and values): {replacements}")
+
+    # Replace in structured content controls
     replace_placeholders_in_content_controls(doc, replacements)
+
+    # Replace plain text placeholders like <<WBS_PhaseX>>
+    replace_wbs_placeholders_in_paragraphs(doc, replacements)
+
     doc.save(output_path)
+
 
 # if __name__ == "__main__":
 #     input_file = "template.docx"  # Replace with your input file path
