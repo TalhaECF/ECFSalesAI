@@ -426,6 +426,7 @@ class SowApiView(APIView):
             wbs_item_id = request.data.get("wbs_item_id")
             initial_form_item_id = request.data.get("initial_form_item_id")
             access_token = get_access_token()
+            # get_template(access_token, "SOW")
 
             # input_file = "ECF Data SOW Template Fixed - 250515.docx"
             input_file = "template.docx"

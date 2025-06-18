@@ -654,3 +654,33 @@ def get_project_name(access_token, project_id):
 
     except Exception as e:
         raise Exception(f"Error getting Info for Project-{project_id}: {str(e)}")
+
+def get_template(access_token, template_type):
+    sow_content = None
+    templates_drive_id = config("TEMPLATES_DRIVE_ID")
+    url = f"https://graph.microsoft.com/v1.0/drives/{templates_drive_id}/root/children"
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch files: {response.json()}")
+
+    item_id = None
+    index = 0
+    items = response.json().get('value', [])
+    for idx, item in enumerate(items):
+        item_id = item["id"]
+        item_url = f"https://graph.microsoft.com/v1.0/drives/{templates_drive_id}/items/{item_id}/listItem"
+        response = requests.get(item_url, headers=headers)
+        if response.status_code != 200:
+            raise Exception(f"Failed to fetch items: {response.json()}")
+
+        item_details = response.json()
+        if item_details["fields"]["template_type"] == template_type:
+            index = idx
+            break
+
+    download_url = items[index]["@microsoft.graph.downloadUrl"]
+    file_download_response = requests.get(download_url, headers=headers)
+
+    return sow_content
