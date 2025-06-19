@@ -159,8 +159,8 @@ def save_cost_dict_list_to_excel(data_list, file_path):
 
 
 @log_execution_time
-def create_upload_wbs(access_token, result, project_id, costs):
-    output_file_path = create_file(result, project_id)
+def create_upload_wbs(access_token, result, project_id, costs, template_path):
+    output_file_path = create_file(result, project_id, template_path)
     # save_costs_to_existing_excel(costs, output_file_path)
     save_cost_dict_list_to_excel(costs, output_file_path)
 
@@ -170,6 +170,7 @@ def create_upload_wbs(access_token, result, project_id, costs):
 
     # Remove the file after successful submission
     os.remove(output_file_path)
+    os.remove(template_path)
 
     return True
 
@@ -224,8 +225,7 @@ def add_tasks_to_excel(file_path, phases_data, project_id, sheet_name="Eng WBS")
         print(f"Error: {e}")
         return None
 
-def create_file(ai_response, project_id):
-    file_path = "ai_app/wbs.xlsx"
+def create_file(ai_response, project_id, file_path):
     json_ai_response = eval(ai_response)
     file_name = add_tasks_to_excel(file_path, json_ai_response, project_id)
     return file_name

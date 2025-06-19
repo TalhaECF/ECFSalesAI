@@ -654,3 +654,52 @@ def get_project_name(access_token, project_id):
 
     except Exception as e:
         raise Exception(f"Error getting Info for Project-{project_id}: {str(e)}")
+
+
+def get_template(access_token, template_type):
+    """
+    Downloads a template file (DOCX or XLSX) based on template_type ('SOW' or 'WBS').
+    Preserves formatting and permissions via download URL.
+    """
+
+    templates_drive_id = config("TEMPLATES_DRIVE_ID")
+    url = f"https://graph.microsoft.com/v1.0/drives/{templates_drive_id}/root/children"
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch files: {response.json()}")
+
+    items = response.json().get("value", [])
+    target_item = None
+
+    # Find the item that matches the template_type
+    for item in items:
+        item_id = item["id"]
+        item_url = f"https://graph.microsoft.com/v1.0/drives/{templates_drive_id}/items/{item_id}/listItem"
+        item_response = requests.get(item_url, headers=headers)
+        if item_response.status_code != 200:
+            continue
+
+        item_details = item_response.json()
+        if item_details["fields"].get("template_type") == template_type:
+            target_item = item
+            break
+
+    if not target_item:
+        raise Exception(f"No template found for type: {template_type}")
+
+    download_url = target_item["@microsoft.graph.downloadUrl"]
+    filename = target_item["name"]
+    file_ext = os.path.splitext(filename)[1].lower()  # e.g., '.docx' or '.xlsx'
+
+    output_path =  filename
+
+    file_download_response = requests.get(download_url)
+    if file_download_response.status_code != 200:
+        raise Exception("Failed to download the file.")
+
+    with open(output_path, "wb") as f:
+        f.write(file_download_response.content)
+
+    return output_path

@@ -160,7 +160,8 @@ class WBSDocumentView(APIView):
     def wbs_process(self, access_token, prompt, project_id, costs):
         result = CommonUtils.gpt_response_json(client, prompt)
         update_current_step(project_id, "OpenA API Response- WBS", key="LoggingStatus")
-        create_upload_wbs(access_token, result, project_id, costs)
+        template_path = get_template(access_token, "WBS")
+        create_upload_wbs(access_token, result, project_id, costs, template_path)
         update_current_step(project_id, "WBS Review")
         update_current_step(project_id, "WBS uploaded - WBS", key="LoggingStatus")
         return True
@@ -426,9 +427,8 @@ class SowApiView(APIView):
             wbs_item_id = request.data.get("wbs_item_id")
             initial_form_item_id = request.data.get("initial_form_item_id")
             access_token = get_access_token()
+            input_file = get_template(access_token, "SOW")
 
-            # input_file = "ECF Data SOW Template Fixed - 250515.docx"
-            input_file = "template.docx"
             output_file = f"SOW_{project_id}.docx"
             process_document(input_file, output_file, access_token, project_id, initial_form_item_id, wbs_item_id)
             print(f"Processed document saved as '{output_file}'.")
@@ -439,6 +439,7 @@ class SowApiView(APIView):
 
             # Delete output SOW document after SP upload
             os.remove(output_file)
+            os.remove(input_file)
 
             return Response("Success", status=200)
         except Exception as e:
