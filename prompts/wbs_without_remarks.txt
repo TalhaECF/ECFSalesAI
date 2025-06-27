@@ -21,7 +21,7 @@ Instructions:
 - If time is not a constraint, add at least 10+ tasks per phase (if applicable)
 - Here is extra context from copilot: {copilot_response}\n\n
 - Assess Environment, Design, Deploy and Manage are the titles of 4 phases
-- Make sure the sum of hours for 4 phases are in range of 35-85 hours (highly critical)
+- Make sure the sum of hours for 4 phases are in range of 35-100 hours (highly critical)
 - And, here are the list of services used in the project: {unique_services}\n
 
 **Output Format:**
