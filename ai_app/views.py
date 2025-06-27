@@ -10,6 +10,7 @@ from rest_framework import status
 
 from .cost_estimate_utils import get_azure_service_cost
 from .cost_estimation_json import get_service_app_records
+from .docx_processing import process_document
 from .utils import *
 from decouple import config
 import os
@@ -159,7 +160,8 @@ class WBSDocumentView(APIView):
     def wbs_process(self, access_token, prompt, project_id, costs):
         result = CommonUtils.gpt_response_json(client, prompt)
         update_current_step(project_id, "OpenA API Response- WBS", key="LoggingStatus")
-        create_upload_wbs(access_token, result, project_id, costs)
+        template_path = get_template(access_token, "WBS")
+        create_upload_wbs(access_token, result, project_id, costs, template_path)
         update_current_step(project_id, "WBS Review")
         update_current_step(project_id, "WBS uploaded - WBS", key="LoggingStatus")
         return True
@@ -324,8 +326,8 @@ class DiscoveryQuestionnaireAPIView(APIView):
 
             deployment_name_model = config("DEPLOYMENT_NAME")
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                max_tokens=10000,
+                model=config("MODEL_NAME"),
+                # max_tokens=10000,
                 messages=[{"role": "user", "content": prompt}]
             )
             result = response.choices[0].message.content.strip()
@@ -413,3 +415,32 @@ class SharePointFileParserView(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+class SowApiView(APIView):
+    http_method_names = ['post']
+
+    def post(self, request):
+        try:
+            project_id = request.data.get("project_id")
+            wbs_item_id = request.data.get("wbs_item_id")
+            initial_form_item_id = request.data.get("initial_form_item_id")
+            access_token = get_access_token()
+            input_file = get_template(access_token, "SOW")
+
+            output_file = f"SOW_{project_id}.docx"
+            process_document(input_file, output_file, access_token, project_id, initial_form_item_id, wbs_item_id)
+            print(f"Processed document saved as '{output_file}'.")
+
+            # Upload to SharePoint
+            upload_sow_to_sharepoint(output_file, project_id)
+            update_current_step(project_id, "SOW Review")
+
+            # Delete output SOW document after SP upload
+            os.remove(output_file)
+            os.remove(input_file)
+
+            return Response("Success", status=200)
+        except Exception as e:
+            return Response(f"Error: {str(e)}", status=500)

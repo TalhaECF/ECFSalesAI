@@ -201,6 +201,48 @@ def update_current_step(project_id, current_step, key="CurrentStep"):
         raise Exception(f"Error updating CurrentStep: {str(e)}")
 
 
+def upload_sow_to_sharepoint(file_path, project_id):
+    try:
+        access_token = get_access_token()
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+
+        site_id = config("SITE_ID")
+        sow_drive = config("SOW_DRIVE")
+        # Upload the file
+        upload_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{sow_drive}/root:/SOW-{project_id}.docx:/content"
+
+        with open(file_path, "rb") as file:
+            response = requests.put(upload_url, headers=headers, data=file)
+
+        if response.status_code not in [200, 201]:
+            raise Exception(f"Failed to upload file: {response.json()}")
+
+        # Extract the uploaded file's item ID
+        item_id = response.json().get("id")
+
+        # Get existing columns
+        columns_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives/{sow_drive}/items/{item_id}/listItem/fields"
+        fields_response = requests.get(columns_url, headers=headers)
+
+        if fields_response.status_code != 200:
+            raise Exception(f"Failed to fetch columns: {fields_response.json()}")
+
+        updated_project_id = {
+            "ProjectId":project_id
+        }
+
+        # Update the columns
+        update_response = requests.patch(columns_url, headers=headers, json=updated_project_id)
+
+        if update_response.status_code != 200:
+            raise Exception(f"Failed to update project_id: {update_response.json()}")
+
+    except Exception as e:
+        raise Exception(f"Error during SharePoint upload or update: {str(e)}")
+
 def get_sharepoint_items(access_token, drive_url):
     """Fetch items from the SharePoint drive URL."""
     headers = {"Authorization": f"Bearer {access_token}"}
@@ -326,8 +368,8 @@ def send_to_gpt(client, parsed_content):
         f"Make sure to add all Solution Plays from the content into Json keys"
     )
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        max_tokens=2000,
+        model=config("MODEL_NAME"),
+        # max_tokens=2000,
         response_format={"type": "json_object"},
         messages=[{"role": "user", "content": prompt}]
     )
@@ -337,8 +379,8 @@ def send_to_gpt(client, parsed_content):
 def gpt_response_for_sp(client, prompt):
     deployment_name_model = config("DEPLOYMENT_NAME")
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        max_tokens=350,
+        model=config("MODEL_NAME"),
+        # max_tokens=350,
         response_format={"type": "json_object"},
         messages=[{"role": "user", "content": prompt}],
     )
@@ -555,7 +597,7 @@ def get_initial_form_content(access_token, project_id):
     if len(items) == 0:
         return "No files found!", False
 
-    download_url = get_file_down_url(access_token, items, project_id)
+    download_url = get_file_down_url(access_token, items, project_id, delimiter="_")
     file_content = get_file_content(access_token, download_url)
     return file_content, True
 
@@ -612,3 +654,52 @@ def get_project_name(access_token, project_id):
 
     except Exception as e:
         raise Exception(f"Error getting Info for Project-{project_id}: {str(e)}")
+
+
+def get_template(access_token, template_type):
+    """
+    Downloads a template file (DOCX or XLSX) based on template_type ('SOW' or 'WBS').
+    Preserves formatting and permissions via download URL.
+    """
+
+    templates_drive_id = config("TEMPLATES_DRIVE_ID")
+    url = f"https://graph.microsoft.com/v1.0/drives/{templates_drive_id}/root/children"
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch files: {response.json()}")
+
+    items = response.json().get("value", [])
+    target_item = None
+
+    # Find the item that matches the template_type
+    for item in items:
+        item_id = item["id"]
+        item_url = f"https://graph.microsoft.com/v1.0/drives/{templates_drive_id}/items/{item_id}/listItem"
+        item_response = requests.get(item_url, headers=headers)
+        if item_response.status_code != 200:
+            continue
+
+        item_details = item_response.json()
+        if item_details["fields"].get("template_type") == template_type:
+            target_item = item
+            break
+
+    if not target_item:
+        raise Exception(f"No template found for type: {template_type}")
+
+    download_url = target_item["@microsoft.graph.downloadUrl"]
+    filename = target_item["name"]
+    file_ext = os.path.splitext(filename)[1].lower()  # e.g., '.docx' or '.xlsx'
+
+    output_path =  filename
+
+    file_download_response = requests.get(download_url)
+    if file_download_response.status_code != 200:
+        raise Exception("Failed to download the file.")
+
+    with open(output_path, "wb") as f:
+        f.write(file_download_response.content)
+
+    return output_path
