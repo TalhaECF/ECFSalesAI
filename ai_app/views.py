@@ -8,7 +8,6 @@ from rest_framework.views import APIView, View
 from rest_framework.response import Response
 from rest_framework import status
 
-from .cost_estimate_utils import get_azure_service_cost
 from .cost_estimation_json import get_service_app_records
 from .docx_processing import process_document
 from .utils import *
