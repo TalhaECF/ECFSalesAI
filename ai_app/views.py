@@ -8,7 +8,6 @@ from rest_framework.views import APIView, View
 from rest_framework.response import Response
 from rest_framework import status
 
-from .cost_estimate_utils import get_azure_service_cost
 from .cost_estimation_json import get_service_app_records
 from .docx_processing import process_document
 from .utils import *
@@ -212,6 +211,18 @@ class WBSDocumentView(APIView):
             total_costs.extend(cost_list)
 
         return total_costs
+
+    def get_project_type(self, client, questionnaire_content):
+        wbs_example_projects = None
+        with open("wbs_examples.json", "r") as f:
+            wbs_example_projects = f.read()
+
+        prompt_project_type = f"""
+        Filled Discovery Content: {questionnaire_content}
+        From these projects,return a confidence score from 1-10 (based on the questionnaire content)
+        Projects details: {wbs_example_projects}\n
+        """
+        projects_confidence_score_dict = eval(CommonUtils.gpt_response_json(client, prompt_project_type))
 
 
 class OAuthRedirectView(View):
