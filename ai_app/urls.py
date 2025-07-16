@@ -10,7 +10,7 @@ urlpatterns = [
     path('form_response/<str:project_id>/', InitialFormResponseView.as_view(), name='initial_form_with_transcript'),
     path("new_discovery_questionnaire/", DiscoveryQuestionnaireAPIView.as_view(), name="discovery-questionnaire"),
     path('prompt_response/', PromptResponseAPIView.as_view(), name='co-pilot-action'),
+    path('sow/', SowApiView.as_view(), name='sow-generation'),
     path('taxonomy_json/', SharePointFileParserView.as_view(), name='taxonomy-parser-json'),
-    path('sow/', SowApiView.as_view(), name='sow-generation')
 ]
 
