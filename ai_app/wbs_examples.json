@@ -1,0 +1,155 @@
+{
+  "Azure Migration": {
+    "phase1": {
+      "hours": [0.5, 0.5],
+      "tasks": [
+          "Prepare and Create Azure Subscription",
+          "Perform Pre Requisites before Migration"
+      ]
+  },
+    "phase2": {
+      "hours": [0.5],
+      "tasks": [
+          "Design the Target Azure Subscription"
+      ]
+  },
+    "phase3": {
+      "hours": [1.0, 0.5, 2.0],
+      "tasks": [
+          "Setup Migration Appliance On Prem and Connect to Azure",
+          "Enable Replication",
+          "Replicate the data"
+      ]
+  },
+    "phase4": {
+      "hours": [1.0, 2.0, 2.0],
+      "tasks": [
+          "Validate the replicated data and verify for errors",
+          "Test Migration and Validation",
+          "Final Cutover and Validation"
+      ]
+  }
+  },
+  "Security Assessment": {
+    "phase1": {
+      "hours": [1.0],
+      "tasks": [
+          "Assess and Analyze requirements"
+      ]
+  },
+    "phase2": {
+      "hours": [1.0, 1.0, 1.0, 1.0, 1.0],
+      "tasks": [
+          "Prepare the Plan for Improving Exposure Score",
+          "Prepare the Plan for Improving Insider Risk",
+          "Prepare the Plan for Improving Security Recommendations",
+          "Prepare the Plan for Improving the MDVM Weakness Recommendations",
+          "Prepare the Plan for Implementing Vulnerability Recommendations"
+      ]
+  },
+    "phase3": {
+      "hours": [8.0, 8.0, 8.0, 4.0, 4.0],
+      "tasks": [
+          "Implement Security Recommendations",
+          "Implement MDVM Weakness Recommendations",
+          "Implement Vulnerability Recommendations",
+          "Implement Insider Risk Recommendations & Configurations",
+          "Implement Exposure Management Recommendations"
+      ]
+  },
+    "phase4": {
+      "hours": [2.0, 1.0],
+      "tasks": [
+          "Validate and Prepare Status Report",
+          "Final Presentation"
+      ]
+  }
+  },
+  "MS Intune": {
+    "phase1": {
+      "hours": [1.0, 1.0],
+      "tasks": [
+          "Review current permissions on the tenant to allow Intune provisioning",
+          "Validate environment includes all Intune prerequisites"
+      ]
+  },
+    "phase2": {
+      "hours": [1.0, 1.0, 1.0, 1.0, 0.5, 0.5],
+      "tasks": [
+          "Setup MDM and MAM conditional access",
+          "Setup Application Packages",
+          "Setup Security Policies",
+          "Setup device management policies",
+          "Update conditional access policies as needed",
+          "Develop User Acceptance Test Script"
+      ]
+  },
+    "phase3": {
+      "hours": [1.0, 2.0, 3.0, 3.0, 2.0, 2.0],
+      "tasks": [
+          "Deploy Policy (MDM & MAM) and apply best practices",
+          "Provide default policies and best practices to help with development of a concrete enterprise mobility policy",
+          "Setup Azure AD Connect server and sync the users and devices to the Azure tenant",
+          "Deploy the mobile device management system to all existing devices base on strategy, processes, and architecture",
+          "Advise on processes for procurement, enrollment, retiring, recycling, monitoring, etc.",
+          "Complete User Acceptance Test script with customer"
+      ]
+  },
+    "phase4": {
+      "hours": [1.0, 1.0, 1.0, 1.0, 3.0],
+      "tasks": [
+          "Monitoring/Reporting",
+          "Monitor device to ensure the solidarity of the enterprise mobility policy",
+          "Validate Policy is provisioned across all devices",
+          "Validate device resources to ensure all devices are provisioned with all the necessary resources",
+          "Document any environment changes, reporting, location and user group creation, device reassignment, application"
+      ]
+  }
+  },
+  "MS Azure Services Deployment": {
+    "phase1": {
+      "hours": [2.0, 1.0, 1.0, 2.0, 1.0, 1.0],
+      "tasks": [
+          "Identify and document all data sources",
+          "Determine performance metrics",
+          "Define health indicators and thresholds",
+          "Assess security configurations and policies",
+          "Review access controls and authentication mechanisms",
+          "Evaluate data encryption and protection measures"
+      ]
+  },
+    "phase2": {
+      "hours": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0],
+      "tasks": [
+          "Gather and document business and technical requirements",
+          "Define system architecture components (e.g., databases, data warehouses, ETL processes)",
+          "Develop high availability architecture",
+          "Design disaster recovery strategies and backup solutions",
+          "UDesign scaling strategies",
+          "Design Access Management",
+          "Define role-based access control (RBAC) policies"
+      ]
+  },
+    "phase3": {
+      "hours": [4.0, 4.0, 4.0, 4.0],
+      "tasks": [
+          "Create and configure Azure data health service",
+          "Implement high availability configurations",
+          "Set up disaster recovery solutions",
+          "Configure auto-scaling settings, if any"
+      ]
+  },
+    "phase4": {
+
+
+
+
+      "hours": [4.0, 4.0],
+      "tasks": [
+          "Create and configure Azure Alert Metrics",
+          "Create and configure Budget Alerts"
+      ]
+  }
+  }
+
+}

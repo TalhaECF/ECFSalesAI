@@ -21,7 +21,7 @@ Instructions:
 - If time is not a constraint, add at least 10+ tasks per phase (if applicable)
 - Here is extra context from copilot: {copilot_response}\n\n
 - Assess Environment, Design, Deploy and Manage are the titles of 4 phases
-- Make sure the sum of hours for 4 phases are in range of 35-100 hours (highly critical)
+- Make sure the sum of hours for a phase do not exceed 25 hours (highly critical)
 - And, here are the list of services used in the project: {unique_services}\n
 
 **Output Format:**
@@ -31,48 +31,5 @@ Instructions:
         - "hours" as a list corresponding to tasks
         - "tasks" as a list of granular engineering tasks
 - Each phase must comprehensively cover all relevant technical aspects, ensuring tasks are not skipped.
-- Example output format:
-{{
-  "phase1": {{
-      "hours": [5, 3, 6, 5, 5, 2],
-      "tasks": [
-          "Set up SharePoint Lists and Libraries for project data storage",
-          "Configure Azure App Service for hosting the AI processing backend",
-          "Integrate OpenAI GPT and Copilot APIs for AI-driven document generation",
-          "Develop and deploy the Discovery Questionnaire generation module",
-          "Implement manual WBS generation trigger with storage in SharePoint",
-          "Test AI-generated questionnaire iterations and user feedback refinement"
-      ]
-  }},
-  "phase2": {{
-      "hours": [4, 3, 3, 5, 6, 5],
-      "tasks": [
-          "Develop and automate the WBS generation process using AI models",
-          "Integrate MS Cost Estimation API for financial insights in WBS",
-          "Enhance Power Automate workflows for document approvals and notifications",
-          "Implement refined AI-driven adjustments to WBS based on feedback",
-          "Validate AI model responses for project scoping accuracy",
-          "Ensure security measures for AI-generated documents in SharePoint"
-      ]
-  }},
-  "phase3": {{
-      "hours": [5, 6, 5, 4, 5],
-      "tasks": [
-          "Develop and deploy automated SOW generation using structured templates",
-          "Configure Power Automate for multi-level approval workflows in SOW processing",
-          "Implement role-based access control (RBAC) for document security",
-          "Optimize AI-generated SOW formatting and content structure",
-          "Test and validate full AI-driven sales documentation workflow"
-      ]
-  }},
-  "phase4": {{
-      "hours": [4, 6, 4, 3, 5],
-      "tasks": [
-          "Conduct full-system testing with real sales data and user validation",
-          "Optimize AI model fine-tuning based on user feedback and performance",
-          "Deploy monitoring and logging mechanisms for AI workflows",
-          "Provide end-user training and documentation for sales teams",
-          "Ensure post-deployment support and long-term maintenance strategy"
-      ]
-  }}
-}}
+- Example output format (just for reference):
+{wbs_example}
