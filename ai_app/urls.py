@@ -13,3 +13,4 @@ urlpatterns = [
     path('taxonomy_json/', SharePointFileParserView.as_view(), name='taxonomy-parser-json'),
     path('sow/', SowApiView.as_view(), name='sow-generation')
 ]
+
