@@ -150,6 +150,50 @@
           "Create and configure Budget Alerts"
       ]
   }
-  }
+  },
+  "Other": {
+    "phase1": {
+      "hours": [2.0, 1.0, 1.0, 2.0, 1.0, 1.0],
+      "tasks": [
+          "Identify and document all data sources",
+          "Determine performance metrics",
+          "Define health indicators and thresholds",
+          "Assess security configurations and policies",
+          "Review access controls and authentication mechanisms",
+          "Evaluate data encryption and protection measures"
+      ]
+  },
+    "phase2": {
+      "hours": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0],
+      "tasks": [
+          "Gather and document business and technical requirements",
+          "Define system architecture components (e.g., databases, data warehouses, ETL processes)",
+          "Develop high availability architecture",
+          "Design disaster recovery strategies and backup solutions",
+          "UDesign scaling strategies",
+          "Design Access Management",
+          "Define role-based access control (RBAC) policies"
+      ]
+  },
+    "phase3": {
+      "hours": [4.0, 4.0, 4.0, 4.0],
+      "tasks": [
+          "Create and configure Azure data health service",
+          "Implement high availability configurations",
+          "Set up disaster recovery solutions",
+          "Configure auto-scaling settings, if any"
+      ]
+  },
+    "phase4": {
 
+
+
+
+      "hours": [4.0, 4.0],
+      "tasks": [
+          "Create and configure Azure Alert Metrics",
+          "Create and configure Budget Alerts"
+      ]
+  }
+  }
 }

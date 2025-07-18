@@ -126,6 +126,7 @@ class WBSDocumentView(APIView):
             costs = self.cost_estimation(questionnaire_content)
             unique_services = []
 
+            relevant_wbs_phases = self.get_project_type(client, questionnaire_content)
             if costs:
                 unique_services = list(set([c["serviceName"] for c in costs]))
             update_current_step(project_id, "Cost Estimation - WBS", key="LoggingStatus")
@@ -145,11 +146,11 @@ class WBSDocumentView(APIView):
             if user_remarks != "":
                 wbs_data = get_wbs_content(access_token, wbs_item_id)
                 prompt = CommonUtils.load_prompt_with_remarks(user_remarks, copilot_response,
-                                                              questionnaire_content, wbs_data, unique_services)
+                                                              questionnaire_content, wbs_data, unique_services, relevant_wbs_phases)
                 self.wbs_process(access_token, prompt, project_id, costs)
                 return Response("SUCCESS", status=200)
 
-            prompt = CommonUtils.load_prompt_without_remarks(questionnaire_content, copilot_response, unique_services)
+            prompt = CommonUtils.load_prompt_without_remarks(questionnaire_content, copilot_response, unique_services, relevant_wbs_phases)
             self.wbs_process(access_token, prompt, project_id, costs)
 
             return Response("SUCCESS", status=200)
@@ -214,15 +215,40 @@ class WBSDocumentView(APIView):
 
     def get_project_type(self, client, questionnaire_content):
         wbs_example_projects = None
-        with open("wbs_examples.json", "r") as f:
-            wbs_example_projects = f.read()
+        with open("ai_app/wbs_examples.json", "r") as f:
+            wbs_example_projects = json.load(f)  # Load as dict
 
+        project_names = list(wbs_example_projects.keys())
         prompt_project_type = f"""
-        Filled Discovery Content: {questionnaire_content}
-        From these projects,return a confidence score from 1-10 (based on the questionnaire content)
-        Projects details: {wbs_example_projects}\n
+        Based on the following Discovery Questionnaire Content, evaluate how closely it matches each of these known project types.
+        Provide a confidence score (1–100) for each:
+
+        Discovery Content:
+        {questionnaire_content}
+
+        Project Types:
+        {', '.join(project_names)}
+
+        Return your response as a JSON object with the format:
+        {{
+          "Azure Migration": 85,
+          "Security Assessment": 75,
+          ...
+        }}
+        Only return the JSON object.
         """
-        projects_confidence_score_dict = eval(CommonUtils.gpt_response_json(client, prompt_project_type))
+
+        try:
+            score_dict = eval(
+                CommonUtils.gpt_response_json(client, prompt_project_type))
+            top_match = max(score_dict.items(), key=lambda x: x[1])
+
+            if top_match[1] >= 70:
+                return top_match[0], wbs_example_projects[top_match[0]]
+            else:
+                return "Other", wbs_example_projects.get("Other", {})
+        except Exception as e:
+            raise RuntimeError(f"Failed to determine project type: {e}")
 
 
 class OAuthRedirectView(View):
