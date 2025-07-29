@@ -2,6 +2,7 @@ import os
 import re
 import json
 import time
+from collections import defaultdict
 
 import requests
 from decouple import config
@@ -703,3 +704,48 @@ def get_template(access_token, template_type):
         f.write(file_download_response.content)
 
     return output_path
+
+
+def fetch_sharepoint_project_data(access_token):
+    """
+    Fetch SharePoint list items using Microsoft Graph API and convert them to structured JSON.
+    """
+    workload_details_list_id = config("WORKLOAD_DETAILS_LIST")  # e.g., list GUID
+    site_id = config("SITE_ID")  # e.g., ecfdata.sharepoint.com,<site-collection-id>,<site-id>
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Accept": "application/json"
+    }
+
+    url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/lists/{workload_details_list_id}/items?expand=fields"
+    response = requests.get(url, headers=headers)
+
+    if response.status_code != 200:
+        raise Exception(f"Graph API request failed: {response.status_code} - {response.text}")
+
+    items = response.json()["value"]
+
+    result = defaultdict(lambda: defaultdict(lambda: {"tasks": [], "hours": []}))
+
+    for item in items:
+        try:
+            fields = item.get("fields", {})
+            project = fields.get("Title")
+            phase = fields.get("Phase")
+            tasks = json.loads(fields.get("Tasks", "[]"))
+            hours = json.loads(fields.get("Hours", "[]"))
+
+            if not (project and phase):
+                continue  # Skip incomplete entries
+
+            if len(tasks) != len(hours):
+                raise ValueError(f"Mismatch in tasks/hours for {project} - {phase}")
+
+            result[project][phase]["tasks"].extend(tasks)
+            result[project][phase]["hours"].extend(hours)
+        except Exception as e:
+            print(f"Error parsing item ID {item.get('id')}: {e}")
+            continue
+
+    return result

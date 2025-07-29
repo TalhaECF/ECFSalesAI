@@ -34,5 +34,5 @@ Instructions:
         - "hours" as a list corresponding to tasks
         - "tasks" as a list of granular engineering tasks
 - Each phase must comprehensively cover all relevant technical aspects, ensuring tasks are not skipped.
-- Example output format (just for reference):
+- Example output format:
 {wbs_example}

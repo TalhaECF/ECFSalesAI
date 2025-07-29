@@ -125,8 +125,8 @@ class WBSDocumentView(APIView):
 
             costs = self.cost_estimation(questionnaire_content)
             unique_services = []
-
-            relevant_wbs_phases = self.get_project_type(client, questionnaire_content)
+            wbs_example_projects = fetch_sharepoint_project_data(access_token)
+            relevant_wbs_phases = self.get_project_type(client, questionnaire_content, wbs_example_projects)
             if costs:
                 unique_services = list(set([c["serviceName"] for c in costs]))
             update_current_step(project_id, "Cost Estimation - WBS", key="LoggingStatus")
@@ -213,10 +213,7 @@ class WBSDocumentView(APIView):
 
         return total_costs
 
-    def get_project_type(self, client, questionnaire_content):
-        wbs_example_projects = None
-        with open("ai_app/wbs_examples.json", "r") as f:
-            wbs_example_projects = json.load(f)  # Load as dict
+    def get_project_type(self, client, questionnaire_content, wbs_example_projects):
 
         project_names = list(wbs_example_projects.keys())
         prompt_project_type = f"""
