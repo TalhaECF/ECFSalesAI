@@ -257,57 +257,45 @@ class DiscoveryQuestionnaireAPIView(APIView):
     """
     API View to handle document parsing and generating discovery questionnaires in Markdown format.
     """
+
     http_method_names = ['get',  'post']
 
     def post(self, request, *args, **kwargs):
-        user_remarks = request.data.get("message")
-        access_token = get_access_token()
-        project_id = request.data.get("project_id")
-        item_id = request.data.get("item_id")
-        project_name = get_project_name(access_token, project_id)
-        initial_form_content = get_initial_form_by_search(access_token, item_id, client)
-
-        taxonomy_json = ""
-        message, file_path, success = taxonomy_processing(client, access_token)
-
-        if not success:
-            print(f'Using the already existing JSON content because {message}')
-            file_path = "response.json"
-        taxonomy_json = read_json_file(file_path)
-
-        # Folder path where documents are stored
-        folder_path = Path(".")
-
-        if not folder_path.exists() or not folder_path.is_dir():
-            return Response(
-                {"error": "The 'Dummy Docs' folder does not exist."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         try:
-            # Read and parse documents
+            user_remarks = request.data.get("message")
+            access_token = get_access_token()
+            project_id = request.data.get("project_id")
+            item_id = request.data.get("item_id")
+            project_name = get_project_name(access_token, project_id)
+            initial_form_content = get_initial_form_by_search(access_token, item_id, client)
+
+            taxonomy_json = ""
+            message, file_path, success = taxonomy_processing(client, access_token)
+            if not success:
+                file_path = "response.json"
+            taxonomy_json = read_json_file(file_path)
+
+            folder_path = Path(".")
+
             client_n_project_prompt = f"From this Initial Form content, give me all the information for client like name, email, project date and other relevant info, etc, {initial_form_content}"
             client_n_project_info = CommonUtils.gpt_response(client, client_n_project_prompt)
             client_n_project_info = f"Project Name: {project_name}\n {client_n_project_prompt}"
 
-
             all_text, discovery_questionnaire_text = read_and_parse_documents(folder_path)
             prompt_zero = f"Return all the solution plays in a list in json, The key must be 'SolutionPlays' and in values keep a list like ['Solution Play1', 'Solution Play2'], find Solution Plays from here: {initial_form_content}"
             solution_plays_list = gpt_response_for_sp(client, prompt_zero)
+
             copilot_prompt = f"""
-                    Solution plays: {solution_plays_list}
-                    Give all helpful MS Docs learning links along with Technical Topics name related to these Solution plays
-                    Make sure to add helpful links of relevant docs
-                """
+                Solution plays: {solution_plays_list}
+                Give all helpful MS Docs learning links along with Technical Topics name related to these Solution plays
+                Make sure to add helpful links of relevant docs
+            """
             copilot_response, success = complete_process(copilot_prompt)
-            with open('copilot_response.txt', 'w') as f:
-                f.write(str(copilot_response))
-                f.close()
 
-
-            prompt = f""""
+            prompt = f"""
                 Based on the following discovery questionnaire, generate a new discovery questionnaire tailored specifically for the Solution Play(s) mentioned in this list: {solution_plays_list}\n 
-                \n\nSample Discovery Questionnaire (this is just an example):\n{discovery_questionnaire_text}\n\n
+
+                Sample Discovery Questionnaire (this is just an example):\n{discovery_questionnaire_text}\n\n
                 For context, here is the Initial Form response with the transcript:\n\n {copilot_response} \n
                 Here is some more context which has solution plays: \n{taxonomy_json}\n
                 User Notes (must be followed if provided): {user_remarks}\n
@@ -315,29 +303,27 @@ class DiscoveryQuestionnaireAPIView(APIView):
                 Instructions:
                 - Make sure to complete the discovery questionnaire focusing exclusively on the Solution Play(s) mentioned in the Form Response and User Notes
                 - Questions should be relevant to the Solution Play(s) mentioned.
-                - Use clear numbering for each question and proper formatting for multiple-choice options (e.g., (1), (2), etc.).
+                - Use clear numbering for each **main question** only (1, 2, 3 … continuing up to 20+) and proper formatting for multiple-choice options (e.g., (1), (2), etc.)..
+                - Do NOT restart numbering inside sections; numbering should be continuous across the document.
+                - For sub-parts of a question, use bullet points (•) or letters (a, b, c), but never numbers, so Google Docs does not double-number them.
                 - Ensure that the structure and format of the sample discovery questionnaire are followed precisely.
-                - Output only the questionnaire content, formatted as a numbered list with properly labeled options in Docx format
+                - Bold section titles and important labels (e.g., **Project and Client Overview**, **Environment Details**).
+                - Output only the questionnaire content, formatted as a numbered list with bold section titles and properly labeled options in Docx format.
                 - Add the constraints, timeline, benefits and important aspects of the project too.
-                - Add at least 20+ questions
+                - Add at least 25+ questions
+                - Don't include any conclusion text in ending except required
                 - Fill all the basic questions based on the info: {client_n_project_info}
-                - Here is the complete initial for response for better context: {initial_form_content}
+                - Here is the complete initial form response for better context: {initial_form_content}
                 """
 
-            deployment_name_model = config("DEPLOYMENT_NAME")
+            # Call LLM
             response = client.chat.completions.create(
                 model=config("MODEL_NAME"),
-                # max_tokens=10000,
                 messages=[{"role": "user", "content": prompt}]
             )
             result = response.choices[0].message.content.strip()
 
-            new_doc = Document()
-
-            result = re.sub(r'\*', '', result)
-
-            # Add LLM-generated content to the new document
-            new_doc.add_paragraph(result, style='Normal')
+            new_doc = format_docx_from_text(result)
 
             # Save the generated questionnaire
             output_file_path = folder_path / "Generated_Discovery_Questionnaire.docx"
@@ -347,21 +333,16 @@ class DiscoveryQuestionnaireAPIView(APIView):
             upload_questionnaire_to_sharepoint(output_file_path, project_id)
             update_current_step(project_id, "Questionnaire Review")
 
-            # Remove the file after successful submission
+            # Delete file after upload
             os.remove(output_file_path)
 
             return Response(
-                {
-                    "message": "Generated discovery questionnaire successfully."
-                },
+                {"message": "Generated discovery questionnaire successfully."},
                 status=status.HTTP_200_OK,
             )
 
         except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class PromptResponseAPIView(APIView):
