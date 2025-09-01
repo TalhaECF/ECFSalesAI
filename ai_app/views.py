@@ -290,23 +290,24 @@ class DiscoveryQuestionnaireAPIView(APIView):
 
             prompt = f"""
                 Based on the following discovery questionnaire, generate a new discovery questionnaire tailored specifically for the Solution Play(s) mentioned in this list: {solution_plays_list}\n 
-    
+
                 Sample Discovery Questionnaire (this is just an example):\n{discovery_questionnaire_text}\n\n
                 For context, here is the Initial Form response with the transcript:\n\n {copilot_response} \n
                 Here is some more context which has solution plays: \n{taxonomy_json}\n
                 User Notes (must be followed if provided): {user_remarks}\n
-    
+
                 Instructions:
                 - Make sure to complete the discovery questionnaire focusing exclusively on the Solution Play(s) mentioned in the Form Response and User Notes
                 - Questions should be relevant to the Solution Play(s) mentioned.
-                - Use clear numbering for each **main question** only (1, 2, 3 … continuing up to 20+).
+                - Use clear numbering for each **main question** only (1, 2, 3 … continuing up to 20+) and proper formatting for multiple-choice options (e.g., (1), (2), etc.)..
                 - Do NOT restart numbering inside sections; numbering should be continuous across the document.
                 - For sub-parts of a question, use bullet points (•) or letters (a, b, c), but never numbers, so Google Docs does not double-number them.
                 - Ensure that the structure and format of the sample discovery questionnaire are followed precisely.
                 - Bold section titles and important labels (e.g., **Project and Client Overview**, **Environment Details**).
                 - Output only the questionnaire content, formatted as a numbered list with bold section titles and properly labeled options in Docx format.
                 - Add the constraints, timeline, benefits and important aspects of the project too.
-                - Add at least 20+ questions
+                - Add at least 25+ questions
+                - Don't include any conclusion text in ending except required
                 - Fill all the basic questions based on the info: {client_n_project_info}
                 - Here is the complete initial form response for better context: {initial_form_content}
                 """
