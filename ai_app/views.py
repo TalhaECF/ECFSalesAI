@@ -254,6 +254,10 @@ class OAuthRedirectView(View):
 
 
 class DiscoveryQuestionnaireAPIView(APIView):
+    """
+    API View to handle document parsing and generating discovery questionnaires in Markdown format.
+    """
+
     http_method_names = ['get',  'post']
 
     def post(self, request, *args, **kwargs):
@@ -319,49 +323,7 @@ class DiscoveryQuestionnaireAPIView(APIView):
             )
             result = response.choices[0].message.content.strip()
 
-            new_doc = Document()
-            for line in result.splitlines():
-                line = line.strip()
-                if not line or line.lower().startswith("based on the"):  # 🚫 remove unwanted intro
-                    continue
-
-                # Section headers like **Project Overview**
-                if re.match(r'^\*\*(.+)\*\*$', line):
-                    header_text = re.sub(r'^\*\*(.+)\*\*$', r'\1', line)
-                    new_doc.add_paragraph(header_text, style="Heading 2")
-
-                # Numbered questions with bold field labels (e.g., "1. **Project Name:** Value")
-                elif re.match(r'^\d+\.\s+\*\*.+\*\*', line):
-                    num, text = line.split('.', 1)
-                    para = new_doc.add_paragraph(style="List Number")
-                    para.add_run(f"{num}. ")
-
-                    # handle bold portion
-                    bold_match = re.search(r'\*\*(.+?)\*\*', text)
-                    if bold_match:
-                        para.add_run(bold_match.group(1)).bold = True
-                        rest = re.sub(r'\*\*.+?\*\*', '', text)
-                        para.add_run(rest)
-                    else:
-                        para.add_run(text)
-
-                # Simple numbered questions (1., 2., 3.)
-                elif re.match(r'^\d+\.', line):
-                    new_doc.add_paragraph(line, style="List Number")
-
-                # Lettered sub-points (a., b., c.)
-                elif re.match(r'^[a-zA-Z]\.', line):
-                    new_doc.add_paragraph(line, style="List Bullet")
-
-                # Options (1), (2), (3)
-                elif re.match(r'^\(\d+\)', line):
-                    new_doc.add_paragraph(line, style="List Bullet")
-
-                # Normal text (catch-all)
-                else:
-                    # strip any remaining ** markers
-                    clean_line = re.sub(r'\*\*(.+?)\*\*', r'\1', line)
-                    new_doc.add_paragraph(clean_line, style="Normal")
+            new_doc = format_docx_from_text(result)
 
             # Save the generated questionnaire
             output_file_path = folder_path / "Generated_Discovery_Questionnaire.docx"

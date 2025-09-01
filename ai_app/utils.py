@@ -13,7 +13,8 @@ import openai
 from pdf2image import convert_from_path
 import zipfile
 import xml.etree.ElementTree as ET
-
+import re
+from docx import Document
 def get_access_token():
     """
     Generate an access token using client credentials flow.
@@ -703,3 +704,54 @@ def get_template(access_token, template_type):
         f.write(file_download_response.content)
 
     return output_path
+
+
+def format_docx_from_text(result: str) -> Document:
+    """
+    Convert formatted text (Markdown-like) into a Word Document (python-docx Document).
+    Handles headers, numbered lists, bullets, and bold fields.
+    """
+    new_doc = Document()
+
+    for line in result.splitlines():
+        line = line.strip()
+        if not line or line.lower().startswith("based on the"):  # 🚫 remove unwanted intro
+            continue
+
+        # Section headers like **Project Overview**
+        if re.match(r'^\*\*(.+)\*\*$', line):
+            header_text = re.sub(r'^\*\*(.+)\*\*$', r'\1', line)
+            new_doc.add_paragraph(header_text, style="Heading 2")
+
+        # Numbered questions with bold field labels (e.g., "1. **Project Name:** Value")
+        elif re.match(r'^\d+\.\s+\*\*.+\*\*', line):
+            num, text = line.split('.', 1)
+            para = new_doc.add_paragraph(style="List Number")
+            para.add_run(f"{num}. ")
+
+            bold_match = re.search(r'\*\*(.+?)\*\*', text)
+            if bold_match:
+                para.add_run(bold_match.group(1)).bold = True
+                rest = re.sub(r'\*\*.+?\*\*', '', text)
+                para.add_run(rest)
+            else:
+                para.add_run(text)
+
+        # Simple numbered questions (1., 2., 3.)
+        elif re.match(r'^\d+\.', line):
+            new_doc.add_paragraph(line, style="List Number")
+
+        # Lettered sub-points (a., b., c.)
+        elif re.match(r'^[a-zA-Z]\.', line):
+            new_doc.add_paragraph(line, style="List Bullet")
+
+        # Options (1), (2), (3)
+        elif re.match(r'^\(\d+\)', line):
+            new_doc.add_paragraph(line, style="List Bullet")
+
+        # Normal text (catch-all)
+        else:
+            clean_line = re.sub(r'\*\*(.+?)\*\*', r'\1', line)
+            new_doc.add_paragraph(clean_line, style="Normal")
+
+    return new_doc
